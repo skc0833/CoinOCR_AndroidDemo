@@ -17,6 +17,15 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <com.skc.camerax_sample.GraphicOverlay
+        android:id="@+id/graphic_overlay"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintLeft_toLeftOf="@id/preview"
+        app:layout_constraintRight_toRightOf="@id/preview"
+        app:layout_constraintTop_toTopOf="@id/preview"
+        app:layout_constraintBottom_toBottomOf="@id/preview"/>
+
     <LinearLayout
         android:id="@id/control"
         android:layout_width="match_parent"
@@ -44,6 +53,13 @@
             <Spinner
                 android:id="@+id/size_selector"
                 android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"/>
+
+            <Spinner
+                android:id="@+id/feature_selector"
+                android:layout_width="0dp"
+                android:layout_weight="1"
                 android:layout_height="wrap_content"
                 android:layout_gravity="center"/>
 

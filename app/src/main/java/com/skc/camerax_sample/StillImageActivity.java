@@ -19,9 +19,13 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.PopupMenu;
 import android.widget.Spinner;
+import android.widget.Toast;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+
+import com.skc.camerax_sample.ocr.Predictor;
+import com.skc.camerax_sample.textdetector.TextRecognitionProcessor;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -31,6 +35,9 @@ import java.util.List;
 public class StillImageActivity extends AppCompatActivity {
 
     private static final String TAG = "StillImageActivity";
+
+    private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "Coin Recognition ch_PP-OCRv2";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3 = "Coin Recognition ev_PP-OCRv3";
 
     private static final String SIZE_SCREEN = "w:screen"; // Match screen width
     private static final String SIZE_1024_768 = "w:1024"; // ~1024*768 in a normal ratio
@@ -44,6 +51,9 @@ public class StillImageActivity extends AppCompatActivity {
     private static final int REQUEST_CHOOSE_IMAGE = 1002;
 
     private ImageView preview;
+    private GraphicOverlay graphicOverlay;
+    private String selectedMode = COIN_RECOGNITION_ch_PP_OCRv2;
+
     private String selectedSize = SIZE_SCREEN;
 
     boolean isLandScape;
@@ -51,6 +61,9 @@ public class StillImageActivity extends AppCompatActivity {
     private Uri imageUri;
     private int imageMaxWidth;
     private int imageMaxHeight;
+    private VisionImageProcessor imageProcessor;
+
+    protected Predictor predictor = new Predictor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,7 +91,9 @@ public class StillImageActivity extends AppCompatActivity {
                     popup.show();
                 });
         preview = findViewById(R.id.preview);
+        graphicOverlay = findViewById(R.id.graphic_overlay);
 
+        populateFeatureSelector();
         populateSizeSelector();
 
         isLandScape =
@@ -93,14 +108,14 @@ public class StillImageActivity extends AppCompatActivity {
         rootView
             .getViewTreeObserver()
             .addOnGlobalLayoutListener(
-                new ViewTreeObserver.OnGlobalLayoutListener() {
+                new ViewTreeObserver.OnGlobalLayoutListener() { // skc 전체 뷰가 그려질 때 호출됨
                     @Override
                     public void onGlobalLayout() {
                         rootView.getViewTreeObserver().removeOnGlobalLayoutListener(this);
                         imageMaxWidth = rootView.getWidth();
                         imageMaxHeight = rootView.getHeight() - findViewById(R.id.control).getHeight();
                         if (SIZE_SCREEN.equals(selectedSize)) {
-                            tryReloadImage();
+                            //tryReloadAndDetectInImage(); // skc 불필요해 보이므로 주석처리함
                         }
                     }
                 });
@@ -110,7 +125,24 @@ public class StillImageActivity extends AppCompatActivity {
     public void onResume() {
         super.onResume();
         Log.d(TAG, "onResume()");
-        tryReloadImage();
+        //createImageProcessor(); // skc 불필요해 보이므로 주석처리함
+        //tryReloadAndDetectInImage();
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        if (imageProcessor != null) {
+            imageProcessor.stop();
+        }
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if (imageProcessor != null) {
+            imageProcessor.stop();
+        }
     }
 
     @Override
@@ -123,11 +155,11 @@ public class StillImageActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
         if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {
-            tryReloadImage();
+            tryReloadAndDetectInImage();
         } else if (requestCode == REQUEST_CHOOSE_IMAGE && resultCode == RESULT_OK) {
             // In this case, imageUri is returned by the chooser, save it.
             imageUri = data.getData();
-            tryReloadImage();
+            tryReloadAndDetectInImage();
         } else {
             super.onActivityResult(requestCode, resultCode, data);
         }
@@ -156,7 +188,69 @@ public class StillImageActivity extends AppCompatActivity {
         }
     }
 
-    private void tryReloadImage() {
+    private void populateFeatureSelector() {
+        Spinner featureSpinner = findViewById(R.id.feature_selector);
+        List<String> options = new ArrayList<>();
+        options.add(COIN_RECOGNITION_ch_PP_OCRv2);
+        //options.add(COIN_RECOGNITION_en_PP_OCRv3); // skc TODO
+
+        // Creating adapter for featureSpinner
+        ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
+        // Drop down layout style - list view with radio button
+        dataAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // attaching data adapter to spinner
+        featureSpinner.setAdapter(dataAdapter);
+        featureSpinner.setOnItemSelectedListener(
+            new AdapterView.OnItemSelectedListener() {
+                @Override
+                public void onItemSelected(
+                    AdapterView<?> parentView, View selectedItemView, int pos, long id) {
+                    selectedMode = parentView.getItemAtPosition(pos).toString();
+                    createImageProcessor();
+                    tryReloadAndDetectInImage();
+                }
+                @Override
+                public void onNothingSelected(AdapterView<?> arg0) {}
+            });
+    }
+
+    // skc 시작시 onResume() 에서 호출하는 부분은 주석처리함(불필요해보임)
+    // featureSpinner.onItemSelected() 에서만 호출됨
+    private void createImageProcessor() {
+        if (imageProcessor != null) {
+            imageProcessor.stop();
+        }
+        try {
+            switch (selectedMode) {
+                case COIN_RECOGNITION_ch_PP_OCRv2:
+                    if (imageProcessor != null) {
+                        imageProcessor.stop();
+                    }
+                    predictor.init(this, "models/ch_PP-OCRv2", "labels/ppocr_keys_v1.txt",
+                        0, 1, "", 960, 0.1f);
+                    imageProcessor = new TextRecognitionProcessor(this, predictor);
+                    break;
+                case COIN_RECOGNITION_en_PP_OCRv3:
+                    if (imageProcessor != null) {
+                        imageProcessor.stop();
+                    }
+                    //predictor.init(this, "models/en_PP-OCRv3", "labels/ppocr_keys_en_v3.txt", 0, 1, "", 960, 0.1f);
+                    //imageProcessor = new TextRecognitionProcessor(this, predictor);
+                    break;
+                default:
+                    Log.e(TAG, "Unknown selectedMode: " + selectedMode);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "Can not create image processor: " + selectedMode, e);
+            Toast.makeText(
+                    getApplicationContext(),
+                    "Can not create image processor: " + e.getMessage(),
+                    Toast.LENGTH_LONG)
+                .show();
+        }
+    }
+
+    private void tryReloadAndDetectInImage() {
         Log.d(TAG, "Try reload and detect image");
         try {
             if (imageUri == null) {
@@ -172,6 +266,9 @@ public class StillImageActivity extends AppCompatActivity {
             if (imageBitmap == null) {
                 return;
             }
+
+            // Clear the overlay first
+            graphicOverlay.clear();
 
             Bitmap resizedBitmap;
             if (selectedSize.equals(SIZE_ORIGINAL)) {
@@ -193,7 +290,16 @@ public class StillImageActivity extends AppCompatActivity {
                         (int) (imageBitmap.getHeight() / scaleFactor),
                         true);
             }
+
             preview.setImageBitmap(resizedBitmap);
+
+            if (imageProcessor != null) {
+                graphicOverlay.setImageSourceInfo(
+                    resizedBitmap.getWidth(), resizedBitmap.getHeight(), /* isFlipped= */ false);
+                imageProcessor.processBitmap(resizedBitmap, graphicOverlay);
+            } else {
+                Log.e(TAG, "Null imageProcessor, please check adb logs for imageProcessor creation error");
+            }
         } catch (IOException e) {
             Log.e(TAG, "Error retrieving saved image");
             imageUri = null;
@@ -245,12 +351,11 @@ public class StillImageActivity extends AppCompatActivity {
                 public void onItemSelected(
                     AdapterView<?> parentView, View selectedItemView, int pos, long id) {
                     selectedSize = parentView.getItemAtPosition(pos).toString();
-                    tryReloadImage();
+                    tryReloadAndDetectInImage();
                 }
 
                 @Override
                 public void onNothingSelected(AdapterView<?> arg0) {}
             });
     }
-
 }

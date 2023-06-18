@@ -86,6 +86,8 @@ public class CameraSource {
     private final FrameProcessingRunnable processingRunnable;
     private final Object processorLock = new Object();
 
+    private VisionImageProcessor frameProcessor;
+
     /**
      * Map to convert between a byte array, received from the camera, and its associated byte buffer.
      * We use byte buffers internally because this is a more efficient way to call into native code
@@ -113,6 +115,10 @@ public class CameraSource {
         synchronized (processorLock) {
             stop();
             cleanScreen();
+
+            if (frameProcessor != null) {
+                frameProcessor.stop();
+            }
         }
     }
 
@@ -543,6 +549,16 @@ public class CameraSource {
         }
     }
 
+    public void setMachineLearningFrameProcessor(VisionImageProcessor processor) {
+        synchronized (processorLock) {
+            cleanScreen();
+            if (frameProcessor != null) {
+                frameProcessor.stop();
+            }
+            frameProcessor = processor;
+        }
+    }
+
     /**
      * This runnable controls access to the underlying receiver, calling it to process frames when
      * available from the camera. This is designed to run detection on frames as fast as possible
@@ -651,15 +667,16 @@ public class CameraSource {
                 // frame.
 
                 try {
-                    // skc draw preview
-                    Bitmap bitmap = BitmapUtils.getBitmap(data, new FrameMetadata.Builder()
-                        .setWidth(previewSize.getWidth())
-                        .setHeight(previewSize.getHeight())
-                        .setRotation(rotationDegrees)
-                        .build());
-                    graphicOverlay.clear();
-                    graphicOverlay.add(new CameraImageGraphic(graphicOverlay, bitmap));
-                    graphicOverlay.postInvalidate();
+                    synchronized (processorLock) {
+                        frameProcessor.processByteBuffer(
+                            data,
+                            new FrameMetadata.Builder()
+                                .setWidth(previewSize.getWidth())
+                                .setHeight(previewSize.getHeight())
+                                .setRotation(rotationDegrees)
+                                .build(),
+                            graphicOverlay);
+                    }
                 } catch (Exception t) {
                     Log.e(TAG, "Exception thrown from receiver.", t);
                 } finally {
