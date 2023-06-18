@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.skc.camerax_sample"
+    package="com.skc.coin_ocr"
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-feature android:name="android.hardware.camera.any" />
@@ -13,16 +13,16 @@
         android:label="@string/app_name"
         android:theme="@style/Theme.CoinOCR_AndroidDemo">
         <activity
-            android:name="com.skc.camerax_sample.StillImageActivity"
+            android:name="com.skc.coin_ocr.StillImageActivity"
             android:exported="false" />
         <activity
-            android:name="com.skc.camerax_sample.LivePreviewActivity"
+            android:name="com.skc.coin_ocr.LivePreviewActivity"
             android:exported="false" />
         <activity
-            android:name="com.skc.camerax_sample.CameraXLivePreviewActivity"
+            android:name="com.skc.coin_ocr.CameraXLivePreviewActivity"
             android:exported="false" />
         <activity
-            android:name="com.skc.camerax_sample.ChooserActivity"
+            android:name="com.skc.coin_ocr.ChooserActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -31,7 +31,7 @@
         </activity>
 
         <activity
-            android:name="com.skc.camerax_sample.preference.SettingsActivity"
+            android:name="com.skc.coin_ocr.preference.SettingsActivity"
             android:exported="false"/>
     </application>
 

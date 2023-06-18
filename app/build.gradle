@@ -6,7 +6,7 @@ android {
     compileSdkVersion 31
 
     defaultConfig {
-        applicationId "com.skc.camerax_sample"
+        applicationId "com.skc.coin_ocr"
         minSdkVersion 23
         targetSdkVersion 31
         versionCode 2
@@ -37,8 +37,7 @@ android {
         abi {
             enable true
             reset()
-            // skc TODO add "armeabi-v7a"
-            include "arm64-v8a", 'armeabi-v7a'
+             include "arm64-v8a", 'armeabi-v7a'
         }
     }
     // skc fix error: lambda expressions are not supported in -source 1.7

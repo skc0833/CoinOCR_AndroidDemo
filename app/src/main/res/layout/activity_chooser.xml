@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:paddingStart="20dp"
     android:paddingEnd="20dp"
-    tools:context="com.skc.camerax_sample.ChooserActivity">
+    tools:context="com.skc.coin_ocr.ChooserActivity">
 
     <ListView
         android:id="@+id/test_activity_list_view"
