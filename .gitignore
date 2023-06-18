@@ -39,6 +39,7 @@ captures/
 
 # IntelliJ
 *.iml
+.idea/
 .idea/*.xml
 misc.xml
 deploymentTargetDropDown.xml

@@ -37,7 +37,7 @@ android {
         abi {
             enable true
             reset()
-             include "arm64-v8a", 'armeabi-v7a'
+            include "arm64-v8a", 'armeabi-v7a'
         }
     }
     // skc fix error: lambda expressions are not supported in -source 1.7
@@ -99,7 +99,7 @@ task downloadAndExtractArchives(type: DefaultTask) {
             boolean copyFiles = !file("${archive.dest}").exists()
             if (!file("${cachePath}/${cacheName}.tar.gz").exists()) {
                 ant.get(src: archive.src, dest: file("${cachePath}/${cacheName}.tar.gz"))
-                copyFiles = true; // force to copy files from the latest archive files
+                copyFiles = true // force to copy files from the latest archive files
             }
             // Extract the target archive if its dest path does not exists
             if (copyFiles) {
