@@ -36,8 +36,12 @@ public class StillImageActivity extends AppCompatActivity {
 
     private static final String TAG = "StillImageActivity";
 
-    private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "Coin Recognition ch_PP-OCRv2";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3 = "Coin Recognition ev_PP-OCRv3";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "ch_PP-OCRv2";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer = "ch_PP-OCRv3_det_slim_infer";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_infer = "ch_PP-OCRv3_det_infer";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer = "en_PP-OCRv3_det_slim_infer";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_infer = "en_PP-OCRv3_det_infer";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708"; // skc trained
 
     private static final String SIZE_SCREEN = "w:screen"; // Match screen width
     private static final String SIZE_1024_768 = "w:1024"; // ~1024*768 in a normal ratio
@@ -192,7 +196,11 @@ public class StillImageActivity extends AppCompatActivity {
         Spinner featureSpinner = findViewById(R.id.feature_selector);
         List<String> options = new ArrayList<>();
         options.add(COIN_RECOGNITION_ch_PP_OCRv2);
-        //options.add(COIN_RECOGNITION_en_PP_OCRv3); // skc TODO
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_infer);
+        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer);
+        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708);
 
         // Creating adapter for featureSpinner
         ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
@@ -206,7 +214,7 @@ public class StillImageActivity extends AppCompatActivity {
                 public void onItemSelected(
                     AdapterView<?> parentView, View selectedItemView, int pos, long id) {
                     selectedMode = parentView.getItemAtPosition(pos).toString();
-                    createImageProcessor();
+                    createImageProcessor(selectedMode);
                     tryReloadAndDetectInImage();
                 }
                 @Override
@@ -216,30 +224,35 @@ public class StillImageActivity extends AppCompatActivity {
 
     // skc 시작시 onResume() 에서 호출하는 부분은 주석처리함(불필요해보임)
     // featureSpinner.onItemSelected() 에서만 호출됨
-    private void createImageProcessor() {
+    private void createImageProcessor(String model) {
         if (imageProcessor != null) {
             imageProcessor.stop();
         }
         try {
-            switch (selectedMode) {
+            String modelPath = "models/" + model;
+            String labelPath = "labels/ppocr_keys_v1.txt";
+            String det_model = "";
+            String rec_model = "rec_crnn.nb";
+            String cls_model = "cls.nb";
+            switch (model) {
                 case COIN_RECOGNITION_ch_PP_OCRv2:
-                    if (imageProcessor != null) {
-                        imageProcessor.stop();
-                    }
-                    predictor.init(this, "models/ch_PP-OCRv2", "labels/ppocr_keys_v1.txt",
-                        0, 1, "", 960, 0.1f);
-                    imageProcessor = new TextRecognitionProcessor(this, predictor);
+                    det_model = "det_db.nb";
                     break;
-                case COIN_RECOGNITION_en_PP_OCRv3:
-                    if (imageProcessor != null) {
-                        imageProcessor.stop();
-                    }
-                    //predictor.init(this, "models/en_PP-OCRv3", "labels/ppocr_keys_en_v3.txt", 0, 1, "", 960, 0.1f);
-                    //imageProcessor = new TextRecognitionProcessor(this, predictor);
+                case COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_det_infer:
+                case COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer:
+                case COIN_RECOGNITION_en_PP_OCRv3_det_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
+                    det_model = "det_" + model + ".nb";
                     break;
                 default:
-                    Log.e(TAG, "Unknown selectedMode: " + selectedMode);
+                    Log.e(TAG, "Unknown model: " + model);
+                    Toast.makeText(getApplicationContext(), "Unknown model: " + model, Toast.LENGTH_LONG).show();
+                    return;
             }
+            Log.i(TAG, "Using " + model);
+            predictor.init(this, modelPath, labelPath, det_model, rec_model, cls_model, 0, 1, "", 960, 0.1f);
+            imageProcessor = new TextRecognitionProcessor(this, predictor);
         } catch (Exception e) {
             Log.e(TAG, "Can not create image processor: " + selectedMode, e);
             Toast.makeText(

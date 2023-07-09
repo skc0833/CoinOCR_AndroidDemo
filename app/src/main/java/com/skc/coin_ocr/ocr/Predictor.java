@@ -44,8 +44,11 @@ public class Predictor {
     public Predictor() {
     }
 
-    public boolean init(Context appCtx, String modelPath, String labelPath, int useOpencl, int cpuThreadNum, String cpuPowerMode) {
-        isLoaded = loadModel(appCtx, modelPath, useOpencl, cpuThreadNum, cpuPowerMode);
+    public boolean init(Context appCtx, String modelPath, String labelPath,
+                        String det_model, String rec_model, String cls_model,
+                        int useOpencl, int cpuThreadNum, String cpuPowerMode) {
+        isLoaded = loadModel(appCtx, modelPath, det_model, rec_model, cls_model,
+            useOpencl, cpuThreadNum, cpuPowerMode);
         if (!isLoaded) {
             return false;
         }
@@ -54,9 +57,12 @@ public class Predictor {
     }
 
 
-    public boolean init(Context appCtx, String modelPath, String labelPath, int useOpencl, int cpuThreadNum, String cpuPowerMode,
+    public boolean init(Context appCtx, String modelPath, String labelPath,
+                        String det_model, String rec_model, String cls_model,
+                        int useOpencl, int cpuThreadNum, String cpuPowerMode,
                         int detLongSize, float scoreThreshold) {
-        boolean isLoaded = init(appCtx, modelPath, labelPath, useOpencl, cpuThreadNum, cpuPowerMode);
+        boolean isLoaded = init(appCtx, modelPath, labelPath, det_model, rec_model, cls_model,
+            useOpencl, cpuThreadNum, cpuPowerMode);
         if (!isLoaded) {
             return false;
         }
@@ -65,7 +71,8 @@ public class Predictor {
         return true;
     }
 
-    protected boolean loadModel(Context appCtx, String modelPath, int useOpencl, int cpuThreadNum, String cpuPowerMode) {
+    protected boolean loadModel(Context appCtx, String modelPath, String det_model, String rec_model, String cls_model,
+                                int useOpencl, int cpuThreadNum, String cpuPowerMode) {
         // Release model if exists
         releaseModel();
 
@@ -88,9 +95,9 @@ public class Predictor {
         config.useOpencl = useOpencl;
         config.cpuThreadNum = cpuThreadNum;
         config.cpuPower = cpuPowerMode;
-        config.detModelFilename = realPath + File.separator + "det_db.nb";
-        config.recModelFilename = realPath + File.separator + "rec_crnn.nb";
-        config.clsModelFilename = realPath + File.separator + "cls.nb";
+        config.detModelFilename = realPath + File.separator + det_model; // "det_db.nb"
+        config.recModelFilename = realPath + File.separator + rec_model; // "rec_crnn.nb"
+        config.clsModelFilename = realPath + File.separator + cls_model; // "cls.nb"
         Log.i("Predictor", "model path" + config.detModelFilename + " ; " + config.recModelFilename + ";" + config.clsModelFilename);
         paddlePredictor = new OCRPredictorNative(config);
 

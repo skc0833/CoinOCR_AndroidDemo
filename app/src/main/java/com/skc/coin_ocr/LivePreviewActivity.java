@@ -27,8 +27,12 @@ public class LivePreviewActivity extends AppCompatActivity
 
     private static final String TAG = "LivePreviewActivity";
 
-    private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "Coin Recognition ch_PP-OCRv2";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3 = "Coin Recognition ev_PP-OCRv3";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "ch_PP-OCRv2";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer = "ch_PP-OCRv3_det_slim_infer";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_infer = "ch_PP-OCRv3_det_infer";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer = "en_PP-OCRv3_det_slim_infer";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_infer = "en_PP-OCRv3_det_infer";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708"; // skc trained
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
@@ -53,7 +57,11 @@ public class LivePreviewActivity extends AppCompatActivity
         Spinner spinner = findViewById(R.id.spinner);
         List<String> options = new ArrayList<>();
         options.add(COIN_RECOGNITION_ch_PP_OCRv2);
-        //options.add(COIN_RECOGNITION_en_PP_OCRv3); // skc TODO
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_infer);
+        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer);
+        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708);
 
         // Creating adapter for spinner
         ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
@@ -162,22 +170,30 @@ public class LivePreviewActivity extends AppCompatActivity
         }
 
         try {
+            String modelPath = "models/" + model;
+            String labelPath = "labels/ppocr_keys_v1.txt";
+            String det_model = "";
+            String rec_model = "rec_crnn.nb";
+            String cls_model = "cls.nb";
             switch (model) {
                 case COIN_RECOGNITION_ch_PP_OCRv2:
-                    Log.i(TAG, "Using COIN_RECOGNITION_ch_PP_OCRv2");
-                    predictor.init(this, "models/ch_PP-OCRv2", "labels/ppocr_keys_v1.txt",
-                        0, 1, "", 960, 0.1f);
-                    cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(this, predictor));
-
+                    det_model = "det_db.nb";
                     break;
-                case COIN_RECOGNITION_en_PP_OCRv3:
-                    Log.i(TAG, "Using COIN_RECOGNITION_en_PP_OCRv3");
-                    //cameraSource.setMachineLearningFrameProcessor(
-                    //    new TextRecognitionProcessor(this, predictor));
+                case COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_det_infer:
+                case COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer:
+                case COIN_RECOGNITION_en_PP_OCRv3_det_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
+                    det_model = "det_" + model + ".nb";
                     break;
                 default:
                     Log.e(TAG, "Unknown model: " + model);
+                    Toast.makeText(getApplicationContext(), "Unknown model: " + model, Toast.LENGTH_LONG).show();
+                    return;
             }
+            Log.i(TAG, "Using " + model);
+            predictor.init(this, modelPath, labelPath, det_model, rec_model, cls_model, 0, 1, "", 960, 0.1f);
+            cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(this, predictor));
         } catch (RuntimeException e) {
             Log.e(TAG, "Can not create image processor: " + model, e);
             Toast.makeText(
