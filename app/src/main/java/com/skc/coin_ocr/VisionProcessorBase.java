@@ -175,8 +175,8 @@ public abstract class VisionProcessorBase implements VisionImageProcessor {
         @Nullable final Bitmap originalCameraImage,
         boolean shouldShowFps,
         long frameStartMs) {
+        final long detectorStartMs = SystemClock.elapsedRealtime();
         if (runModel(originalCameraImage)) { // onSuccess
-            final long detectorStartMs = SystemClock.elapsedRealtime();
             long endMs = SystemClock.elapsedRealtime();
             long currentFrameLatencyMs = endMs - frameStartMs;
             long currentDetectorLatencyMs = endMs - detectorStartMs;

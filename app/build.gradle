@@ -116,34 +116,31 @@ preBuild.dependsOn downloadAndExtractArchives
 
 // skc 공통 모델 파일을 복사해준다(git 용량을 줄이기 위함).
 // app/src/main/ 이 아닌 src/main 경로임에 주의!!!
-String skc_copy_src_model1 = "src/main/assets/models/common/rec_crnn.nb"
-String skc_copy_src_model2 = "src/main/assets/models/common/cls.nb"
+String skc_copy_src_model1 = "src/main/assets/models/common/cls.nb"
+String skc_copy_src_model2 = "src/main/assets/models/common/rec_crnn.nb"
 
-// skc_copy_src_model1=D:\research\CoinOCR_AndroidDemo\app\src\main\assets\models\common\rec_crnn.nb
+// skc_copy_src_model1=D:\research\CoinOCR_AndroidDemo\app\src\main\assets\models\common\cls.nb
 println 'skc_copy_src_model1=' + file({skc_copy_src_model1})
 
 tasks.register('copyModel0', Copy) {
-    from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
+    //from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
+    from "${skc_copy_src_model1}"
     into 'src/main/assets/models/ch_PP-OCRv2'
 }
 tasks.register('copyModel1', Copy) {
-    from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
-    into 'src/main/assets/models/ch_PP-OCRv3_det_infer'
+    from "${skc_copy_src_model1}"
+    into 'src/main/assets/models/ch_PP-OCRv3_infer'
 }
 tasks.register('copyModel2', Copy) {
-    from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
-    into 'src/main/assets/models/ch_PP-OCRv3_det_slim_infer'
+    from "${skc_copy_src_model1}"
+    into 'src/main/assets/models/en_PP-OCRv3_infer'
 }
 tasks.register('copyModel3', Copy) {
-    from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
-    into 'src/main/assets/models/en_PP-OCRv3_det_infer'
-}
-tasks.register('copyModel4', Copy) {
-    from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
-    into 'src/main/assets/models/en_PP-OCRv3_det_slim_infer'
-}
-tasks.register('copyModel5', Copy) {
-    from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
+    from "${skc_copy_src_model1}"
     into 'src/main/assets/models/ch_PP-OCR_V3_add_60x2_230708'
 }
-preBuild.dependsOn copyModel0, copyModel1, copyModel2, copyModel3, copyModel4, copyModel5
+tasks.register('copyModel4', Copy) {
+    from "${skc_copy_src_model1}"
+    into 'src/main/assets/models/ch_PP-OCR_V3_500_add_500_noflip_rot30'
+}
+preBuild.dependsOn copyModel0, copyModel1, copyModel2, copyModel3, copyModel4

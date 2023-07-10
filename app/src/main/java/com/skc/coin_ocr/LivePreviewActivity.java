@@ -28,11 +28,11 @@ public class LivePreviewActivity extends AppCompatActivity
     private static final String TAG = "LivePreviewActivity";
 
     private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "ch_PP-OCRv2";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer = "ch_PP-OCRv3_det_slim_infer";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_infer = "ch_PP-OCRv3_det_infer";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer = "en_PP-OCRv3_det_slim_infer";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_infer = "en_PP-OCRv3_det_infer";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708"; // skc trained
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_infer = "ch_PP-OCRv3_infer";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3_infer = "en_PP-OCRv3_infer";
+    // skc trained
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30 = "ch_PP-OCR_V3_500_add_500_noflip_rot30";
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
@@ -57,11 +57,10 @@ public class LivePreviewActivity extends AppCompatActivity
         Spinner spinner = findViewById(R.id.spinner);
         List<String> options = new ArrayList<>();
         options.add(COIN_RECOGNITION_ch_PP_OCRv2);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_infer);
-        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer);
-        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_infer);
+        options.add(COIN_RECOGNITION_en_PP_OCRv3_infer);
         options.add(COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30);
 
         // Creating adapter for spinner
         ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
@@ -172,23 +171,41 @@ public class LivePreviewActivity extends AppCompatActivity
         try {
             String modelPath = "models/" + model;
             String labelPath = "labels/ppocr_keys_v1.txt";
-            String det_model = "";
+            String det_model = "det_db.nb";
             String rec_model = "rec_crnn.nb";
             String cls_model = "cls.nb";
             switch (model) {
                 case COIN_RECOGNITION_ch_PP_OCRv2:
                     det_model = "det_db.nb";
                     break;
-                case COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer:
-                case COIN_RECOGNITION_ch_PP_OCRv3_det_infer:
-                case COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer:
-                case COIN_RECOGNITION_en_PP_OCRv3_det_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_infer:
+                case COIN_RECOGNITION_en_PP_OCRv3_infer:
                 case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
+                case COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30:
                     det_model = "det_" + model + ".nb";
+                    rec_model = "rec_" + model + ".nb";
                     break;
                 default:
                     Log.e(TAG, "Unknown model: " + model);
                     Toast.makeText(getApplicationContext(), "Unknown model: " + model, Toast.LENGTH_LONG).show();
+                    return;
+            }
+            // skc 현재 COIN_RECOGNITION_ch_PP_OCRv2 성능이 가장 좋아보임!!!
+            switch (model) {
+                case COIN_RECOGNITION_ch_PP_OCRv2:
+                case COIN_RECOGNITION_ch_PP_OCRv3_infer:
+                // 100원 동전의 경우 금액이 거의 NaN 으로 표시되고 있다(500원짜리는 ok)
+                case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
+                case COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30:
+                    labelPath = "labels/ppocr_keys_v1.txt";
+                    break;
+                case COIN_RECOGNITION_en_PP_OCRv3_infer:
+                    // ic15_dict.txt 는 영문자를 제대로 출력하지 못함
+                    labelPath = "labels/en_dict.txt"; // ic15_dict.txt 는 숫자+알파벳(소문자), en_dict.txt 는 추가로 대문자, 특수문자까지 포함됨
+                    break;
+                default:
+                    Log.e(TAG, "Unknown model: " + model);
+                    Toast.makeText(getApplicationContext(), "Unknown model(label): " + model, Toast.LENGTH_LONG).show();
                     return;
             }
             Log.i(TAG, "Using " + model);

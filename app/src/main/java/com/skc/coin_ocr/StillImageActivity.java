@@ -37,11 +37,11 @@ public class StillImageActivity extends AppCompatActivity {
     private static final String TAG = "StillImageActivity";
 
     private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "ch_PP-OCRv2";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer = "ch_PP-OCRv3_det_slim_infer";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_det_infer = "ch_PP-OCRv3_det_infer";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer = "en_PP-OCRv3_det_slim_infer";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3_det_infer = "en_PP-OCRv3_det_infer";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708"; // skc trained
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_infer = "ch_PP-OCRv3_infer";
+    private static final String COIN_RECOGNITION_en_PP_OCRv3_infer = "en_PP-OCRv3_infer";
+    // skc trained
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30 = "ch_PP-OCR_V3_500_add_500_noflip_rot30";
 
     private static final String SIZE_SCREEN = "w:screen"; // Match screen width
     private static final String SIZE_1024_768 = "w:1024"; // ~1024*768 in a normal ratio
@@ -195,12 +195,11 @@ public class StillImageActivity extends AppCompatActivity {
     private void populateFeatureSelector() {
         Spinner featureSpinner = findViewById(R.id.feature_selector);
         List<String> options = new ArrayList<>();
-        options.add(COIN_RECOGNITION_ch_PP_OCRv2);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_det_infer);
-        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer);
-        options.add(COIN_RECOGNITION_en_PP_OCRv3_det_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv2); // skc 맨 처음 아이템에 대해 onItemSelected() 가 호출중
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_infer);
+        options.add(COIN_RECOGNITION_en_PP_OCRv3_infer);
         options.add(COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30);
 
         // Creating adapter for featureSpinner
         ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
@@ -231,23 +230,38 @@ public class StillImageActivity extends AppCompatActivity {
         try {
             String modelPath = "models/" + model;
             String labelPath = "labels/ppocr_keys_v1.txt";
-            String det_model = "";
+            String det_model = "det_db.nb";
             String rec_model = "rec_crnn.nb";
             String cls_model = "cls.nb";
             switch (model) {
                 case COIN_RECOGNITION_ch_PP_OCRv2:
                     det_model = "det_db.nb";
                     break;
-                case COIN_RECOGNITION_ch_PP_OCRv3_det_slim_infer:
-                case COIN_RECOGNITION_ch_PP_OCRv3_det_infer:
-                case COIN_RECOGNITION_en_PP_OCRv3_det_slim_infer:
-                case COIN_RECOGNITION_en_PP_OCRv3_det_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_infer:
+                case COIN_RECOGNITION_en_PP_OCRv3_infer:
                 case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
+                case COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30:
                     det_model = "det_" + model + ".nb";
+                    rec_model = "rec_" + model + ".nb";
                     break;
                 default:
                     Log.e(TAG, "Unknown model: " + model);
                     Toast.makeText(getApplicationContext(), "Unknown model: " + model, Toast.LENGTH_LONG).show();
+                    return;
+            }
+            switch (model) {
+                case COIN_RECOGNITION_ch_PP_OCRv2:
+                case COIN_RECOGNITION_ch_PP_OCRv3_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
+                case COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30:
+                    labelPath = "labels/ppocr_keys_v1.txt";
+                    break;
+                case COIN_RECOGNITION_en_PP_OCRv3_infer:
+                    labelPath = "labels/en_dict.txt";
+                    break;
+                default:
+                    Log.e(TAG, "Unknown model: " + model);
+                    Toast.makeText(getApplicationContext(), "Unknown model(label): " + model, Toast.LENGTH_LONG).show();
                     return;
             }
             Log.i(TAG, "Using " + model);

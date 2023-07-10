@@ -9,6 +9,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.graphics.RectF;
+import android.util.Log;
 
 //import com.google.mlkit.vision.text.Text;
 import com.skc.coin_ocr.GraphicOverlay;
@@ -132,7 +133,10 @@ public class TextGraphic extends GraphicOverlay.Graphic {
     public void draw(Canvas canvas) {
         for (OcrResultModel det : ocrResults) {
             List<Point> points = det.getPoints();
-            if (points.size() == 0 || det.getConfidence() < 0.9f) {
+            Log.d("skc", "draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());
+            //if (points.size() == 0 || det.getConfidence() < 0.9f) {
+            if (points.size() == 0 || det.getConfidence() < 0.5f) { // TODO: skc det.getConfidence() 값은 외부에서 설정 가능하게 하자!!!
+                Log.e("skc", "Skip draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());
                 continue;
             }
             //float x = points.get(0).x;

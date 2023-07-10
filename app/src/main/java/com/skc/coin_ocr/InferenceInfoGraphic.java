@@ -20,7 +20,7 @@ public class InferenceInfoGraphic extends GraphicOverlay.Graphic {
     // Only valid when a stream of input images is being processed. Null for single image mode.
     @Nullable
     private final Integer framesPerSecond;
-    private boolean showLatencyInfo = true;
+    private boolean showLatencyInfo = true; // skc 화면에서 레이블 확인을 위해 FPS: 등을 표시하지 않게함(false)
 
     public InferenceInfoGraphic(
         GraphicOverlay overlay,
