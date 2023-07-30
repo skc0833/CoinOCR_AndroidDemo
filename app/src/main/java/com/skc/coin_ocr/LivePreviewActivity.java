@@ -27,16 +27,18 @@ public class LivePreviewActivity extends AppCompatActivity
 
     private static final String TAG = "LivePreviewActivity";
 
-    private static final String COIN_RECOGNITION_ch_PP_OCRv2 = "ch_PP-OCRv2";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_infer = "ch_PP-OCRv3_infer";
-    private static final String COIN_RECOGNITION_en_PP_OCRv3_infer = "en_PP-OCRv3_infer";
-    // skc trained
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708 = "ch_PP-OCR_V3_add_60x2_230708";
-    private static final String COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30 = "ch_PP-OCR_V3_500_add_500_noflip_rot30";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_Student_99 = "ch_PP-OCRv3_Student_99";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv2_org = "ch_PP-OCRv2_org";
+    // https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_en/models_list_en.md 에서
+    // ch_PP-OCRv2_det --> ch_PP-OCRv3_det_infer.tar
+    private static final String COIN_RECOGNITION_ch_PP_OCRv2_infer = "ch_PP-OCRv2_infer";
+    // _Student2 모델은 _Student 에 비해 부적확해보임(둘 사이의 차이가 뭔가???)
+    private static final String COIN_RECOGNITION_ch_PP_OCRv2_train_Student = "ch_PP-OCRv2_train_Student";
+    private static final String COIN_RECOGNITION_ch_PP_OCRv3_train_Student = "ch_PP-OCRv3_train_Student";
     private CameraSource cameraSource = null;
     private CameraSourcePreview preview;
     private GraphicOverlay graphicOverlay;
-    private String selectedModel = COIN_RECOGNITION_ch_PP_OCRv2;
+    private String selectedModel = COIN_RECOGNITION_ch_PP_OCRv3_Student_99; // COIN_RECOGNITION_ch_PP_OCRv2_org;
 
     protected Predictor predictor = new Predictor();
 
@@ -56,11 +58,11 @@ public class LivePreviewActivity extends AppCompatActivity
 
         Spinner spinner = findViewById(R.id.spinner);
         List<String> options = new ArrayList<>();
-        options.add(COIN_RECOGNITION_ch_PP_OCRv2);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_infer);
-        options.add(COIN_RECOGNITION_en_PP_OCRv3_infer);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708);
-        options.add(COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_Student_99);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv2_org);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv2_infer);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv2_train_Student);
+        options.add(COIN_RECOGNITION_ch_PP_OCRv3_train_Student);
 
         // Creating adapter for spinner
         ArrayAdapter<String> dataAdapter = new ArrayAdapter<>(this, R.layout.spinner_style, options);
@@ -175,13 +177,13 @@ public class LivePreviewActivity extends AppCompatActivity
             String rec_model = "rec_crnn.nb";
             String cls_model = "cls.nb";
             switch (model) {
-                case COIN_RECOGNITION_ch_PP_OCRv2:
+                case COIN_RECOGNITION_ch_PP_OCRv2_org:
                     det_model = "det_db.nb";
                     break;
-                case COIN_RECOGNITION_ch_PP_OCRv3_infer:
-                case COIN_RECOGNITION_en_PP_OCRv3_infer:
-                case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
-                case COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30:
+                case COIN_RECOGNITION_ch_PP_OCRv3_Student_99:
+                case COIN_RECOGNITION_ch_PP_OCRv2_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv2_train_Student:
+                case COIN_RECOGNITION_ch_PP_OCRv3_train_Student:
                     det_model = "det_" + model + ".nb";
                     rec_model = "rec_" + model + ".nb";
                     break;
@@ -190,19 +192,19 @@ public class LivePreviewActivity extends AppCompatActivity
                     Toast.makeText(getApplicationContext(), "Unknown model: " + model, Toast.LENGTH_LONG).show();
                     return;
             }
-            // skc 현재 COIN_RECOGNITION_ch_PP_OCRv2 성능이 가장 좋아보임!!!
+            // skc 현재 COIN_RECOGNITION_ch_PP_OCRv2_org 는 원본 모델(성능 괜찮아 보임)
             switch (model) {
-                case COIN_RECOGNITION_ch_PP_OCRv2:
-                case COIN_RECOGNITION_ch_PP_OCRv3_infer:
-                // 100원 동전의 경우 금액이 거의 NaN 으로 표시되고 있다(500원짜리는 ok)
-                case COIN_RECOGNITION_ch_PP_OCRv3_add_60x2_230708:
-                case COIN_RECOGNITION_ch_PP_OCRv3_500_add_500_noflip_rot30:
+                case COIN_RECOGNITION_ch_PP_OCRv3_Student_99:
+                case COIN_RECOGNITION_ch_PP_OCRv2_org:
+                case COIN_RECOGNITION_ch_PP_OCRv2_infer:
+                case COIN_RECOGNITION_ch_PP_OCRv2_train_Student:
+                case COIN_RECOGNITION_ch_PP_OCRv3_train_Student:
                     labelPath = "labels/ppocr_keys_v1.txt";
                     break;
-                case COIN_RECOGNITION_en_PP_OCRv3_infer:
-                    // ic15_dict.txt 는 영문자를 제대로 출력하지 못함
-                    labelPath = "labels/en_dict.txt"; // ic15_dict.txt 는 숫자+알파벳(소문자), en_dict.txt 는 추가로 대문자, 특수문자까지 포함됨
-                    break;
+//                case COIN_RECOGNITION_en_PP_OCRv3_infer:
+//                    // ic15_dict.txt 는 영문자를 제대로 출력하지 못함
+//                    labelPath = "labels/en_dict.txt"; // ic15_dict.txt 는 숫자+알파벳(소문자), en_dict.txt 는 추가로 대문자, 특수문자까지 포함됨
+//                    break;
                 default:
                     Log.e(TAG, "Unknown model: " + model);
                     Toast.makeText(getApplicationContext(), "Unknown model(label): " + model, Toast.LENGTH_LONG).show();
