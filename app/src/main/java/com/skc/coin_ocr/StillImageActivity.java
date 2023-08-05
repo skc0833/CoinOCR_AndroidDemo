@@ -36,6 +36,7 @@ public class StillImageActivity extends AppCompatActivity {
 
     private static final String TAG = "StillImageActivity";
 
+    // private static final String COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en = "ch_PP-OCRv3_Student_99_en";
     private static final String COIN_RECOGNITION_ch_PP_OCRv3_Student_99 = "ch_PP-OCRv3_Student_99";
     private static final String COIN_RECOGNITION_ch_PP_OCRv2_org = "ch_PP-OCRv2_org";
     private static final String COIN_RECOGNITION_ch_PP_OCRv2_infer = "ch_PP-OCRv2_infer";
@@ -193,6 +194,7 @@ public class StillImageActivity extends AppCompatActivity {
     private void populateFeatureSelector() {
         Spinner featureSpinner = findViewById(R.id.feature_selector);
         List<String> options = new ArrayList<>();
+        // options.add(COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en);
         options.add(COIN_RECOGNITION_ch_PP_OCRv3_Student_99);
         options.add(COIN_RECOGNITION_ch_PP_OCRv2_org);
         options.add(COIN_RECOGNITION_ch_PP_OCRv2_infer);
@@ -235,6 +237,7 @@ public class StillImageActivity extends AppCompatActivity {
                 case COIN_RECOGNITION_ch_PP_OCRv2_org:
                     det_model = "det_db.nb";
                     break;
+                // case COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en:
                 case COIN_RECOGNITION_ch_PP_OCRv3_Student_99:
                 case COIN_RECOGNITION_ch_PP_OCRv2_infer:
                 case COIN_RECOGNITION_ch_PP_OCRv2_train_Student:
@@ -248,6 +251,7 @@ public class StillImageActivity extends AppCompatActivity {
                     return;
             }
             switch (model) {
+                // case COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en:
                 case COIN_RECOGNITION_ch_PP_OCRv3_Student_99:
                 case COIN_RECOGNITION_ch_PP_OCRv2_org:
                 case COIN_RECOGNITION_ch_PP_OCRv2_infer:

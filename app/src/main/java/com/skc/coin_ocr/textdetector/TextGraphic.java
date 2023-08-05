@@ -131,6 +131,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
     /** Draws the text block annotations for position, size, and raw value on the supplied canvas. */
     @Override
     public void draw(Canvas canvas) {
+        int skc_det_idx = 0;
         for (OcrResultModel det : ocrResults) {
             List<Point> points = det.getPoints();
             Log.d("skc", "draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());
@@ -161,7 +162,17 @@ public class TextGraphic extends GraphicOverlay.Graphic {
             canvas.drawPath(path, paint);
             canvas.drawPath(path, paintFillAlpha);
 
-            textPaint.setColor(Color.parseColor("#3B85F5"));
+            // skc 찾은 object 별로 색상을 달리해 표시하게 함
+            String skc_color = "#FF0000";
+            //textPaint.setColor(Color.parseColor("#3B85F5"));
+            if (skc_det_idx % 3 == 1) {
+                skc_color = "#00FF00";
+            } else if (skc_det_idx % 3 == 2) {
+                skc_color = "#0000FF";
+            }
+            textPaint.setColor(Color.parseColor(skc_color));
+            skc_det_idx++;
+
             canvas.drawText(String.format("%s (%.2f)", det.getLabel(), det.getConfidence())
                 , x, y - STROKE_WIDTH, textPaint); // textPaint
         }

@@ -27,12 +27,19 @@ public class LivePreviewActivity extends AppCompatActivity
 
     private static final String TAG = "LivePreviewActivity";
 
+    // ch_PP-OCRv3_Student_99 대비
+    // en_PP-OCRv3_rec_infer.nb ((9,080,832) 로 교체시 중국어가 표시되고 있음
+    // ch_PP-OCRv3_rec_infer.nb (10,786,150) 로 교체시 느리고 정확도도 떨어짐
+    // korean_PP-OCRv3_rec_infer.nb (10,014,720) 로 교체시 중국어 표시, 느림
+    //private static final String COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en = "ch_PP-OCRv3_Student_99_en";
     private static final String COIN_RECOGNITION_ch_PP_OCRv3_Student_99 = "ch_PP-OCRv3_Student_99";
     private static final String COIN_RECOGNITION_ch_PP_OCRv2_org = "ch_PP-OCRv2_org";
     // https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.6/doc/doc_en/models_list_en.md 에서
     // ch_PP-OCRv2_det --> ch_PP-OCRv3_det_infer.tar
     private static final String COIN_RECOGNITION_ch_PP_OCRv2_infer = "ch_PP-OCRv2_infer";
-    // _Student2 모델은 _Student 에 비해 부적확해보임(둘 사이의 차이가 뭔가???)
+    // _Student2 모델은 _Student 에 비해 부정확해보임(둘 사이의 차이가 뭔가???)
+
+    // 아래 2개 모델은 지우자? ch_PP-OCRv3_train_Student 는 ch_PP-OCRv2_train_Student 보다 성능이 안좋은듯
     private static final String COIN_RECOGNITION_ch_PP_OCRv2_train_Student = "ch_PP-OCRv2_train_Student";
     private static final String COIN_RECOGNITION_ch_PP_OCRv3_train_Student = "ch_PP-OCRv3_train_Student";
     private CameraSource cameraSource = null;
@@ -58,6 +65,7 @@ public class LivePreviewActivity extends AppCompatActivity
 
         Spinner spinner = findViewById(R.id.spinner);
         List<String> options = new ArrayList<>();
+        //options.add(COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en);
         options.add(COIN_RECOGNITION_ch_PP_OCRv3_Student_99);
         options.add(COIN_RECOGNITION_ch_PP_OCRv2_org);
         options.add(COIN_RECOGNITION_ch_PP_OCRv2_infer);
@@ -180,6 +188,7 @@ public class LivePreviewActivity extends AppCompatActivity
                 case COIN_RECOGNITION_ch_PP_OCRv2_org:
                     det_model = "det_db.nb";
                     break;
+                // case COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en:
                 case COIN_RECOGNITION_ch_PP_OCRv3_Student_99:
                 case COIN_RECOGNITION_ch_PP_OCRv2_infer:
                 case COIN_RECOGNITION_ch_PP_OCRv2_train_Student:
@@ -194,6 +203,7 @@ public class LivePreviewActivity extends AppCompatActivity
             }
             // skc 현재 COIN_RECOGNITION_ch_PP_OCRv2_org 는 원본 모델(성능 괜찮아 보임)
             switch (model) {
+                // case COIN_RECOGNITION_ch_PP_OCRv3_Student_99_en:
                 case COIN_RECOGNITION_ch_PP_OCRv3_Student_99:
                 case COIN_RECOGNITION_ch_PP_OCRv2_org:
                 case COIN_RECOGNITION_ch_PP_OCRv2_infer:
