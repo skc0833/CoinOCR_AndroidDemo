@@ -83,7 +83,7 @@ lint/tmp/
 cache/
 
 # skc see downloadAndExtractArchives()
-PaddleLite/
+#PaddleLite/
 OpenCV/
 
 # skc 모델 파일을 preload 시킴(용량 절약을 위해 rec_crnn.nb, cls.nb 는 복사해서 재사용하도록 함)

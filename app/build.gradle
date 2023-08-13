@@ -37,8 +37,9 @@ android {
         abi {
             enable true
             reset()
-            //include "arm64-v8a", 'armeabi-v7a'
-            include "arm64-v8a"
+            include "arm64-v8a", 'armeabi-v7a'
+            //include "arm64-v8a"
+            //include 'armeabi-v7a'
         }
     }
     // skc fix error: lambda expressions are not supported in -source 1.7
@@ -64,10 +65,18 @@ dependencies {
 }
 
 def archives = [
-        [
-                'src' : 'https://paddleocr.bj.bcebos.com/libs/paddle_lite_libs_v2_10.tar.gz',
-                'dest': 'PaddleLite'
-        ],
+//        [
+                // [skc][230813] 이 압축파일에는 PaddleLite/cxx/libs/arm64-v8a/libpaddle_light_api_shared.so 만 포함돼 있으며
+                // armeabi-v7a 이 누락돼 있음
+                // 1) 최초에 https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.7/deploy/lite/readme.md 페이지에서
+                // Paddle-Lite library download link 중 Android arm7 용 libpaddle_light_api_shared.so 를 다운받아
+                // PaddleLite/cxx/libs/armeabi-v7a/ 에 저장하고 빌드시 빌드에러 발생
+                // 2) 구글링을 통해 armeabi-v7a 로 적당해 보이는 아래 링크에서 so 파일들을 다운받아 빌드 및 실행시 성공함
+                // https://github.com/equationl/paddleocr4android/tree/master/PaddleOCR4Android/PaddleLite/cxx/libs/armeabi-v7a
+                // 현재 armeabi-v7a 를 자동으로 스크립트로 처리할 방법을 몰라 일단 소스에 PaddleLite 폴더를 포함시키게 처리함
+                //'src' : 'https://paddleocr.bj.bcebos.com/libs/paddle_lite_libs_v2_10.tar.gz',
+                //'dest': 'PaddleLite'
+//        ],
         [
                 'src' : 'https://paddlelite-demo.bj.bcebos.com/libs/android/opencv-4.2.0-android-sdk.tar.gz',
                 'dest': 'OpenCV'
@@ -114,33 +123,33 @@ task downloadAndExtractArchives(type: DefaultTask) {
 }
 preBuild.dependsOn downloadAndExtractArchives
 
-// skc 공통 모델 파일을 복사해준다(git 용량을 줄이기 위함).
-// app/src/main/ 이 아닌 src/main 경로임에 주의!!!
-String skc_copy_src_model1 = "src/main/assets/models/common/cls.nb"
-String skc_copy_src_model2 = "src/main/assets/models/common/rec_crnn.nb"
-
-// skc_copy_src_model1=D:\research\CoinOCR_AndroidDemo\app\src\main\assets\models\common\cls.nb
-println 'skc_copy_src_model1=' + file({skc_copy_src_model1})
-
-tasks.register('copyModel0', Copy) {
-    //from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
-    from "${skc_copy_src_model1}"
-    into 'src/main/assets/models/ch_PP-OCRv2'
-}
-tasks.register('copyModel1', Copy) {
-    from "${skc_copy_src_model1}"
-    into 'src/main/assets/models/ch_PP-OCRv3_infer'
-}
-tasks.register('copyModel2', Copy) {
-    from "${skc_copy_src_model1}"
-    into 'src/main/assets/models/en_PP-OCRv3_infer'
-}
-tasks.register('copyModel3', Copy) {
-    from "${skc_copy_src_model1}"
-    into 'src/main/assets/models/ch_PP-OCR_V3_add_60x2_230708'
-}
-tasks.register('copyModel4', Copy) {
-    from "${skc_copy_src_model1}"
-    into 'src/main/assets/models/ch_PP-OCR_V3_500_add_500_noflip_rot30'
-}
-preBuild.dependsOn copyModel0, copyModel1, copyModel2, copyModel3, copyModel4
+//// skc 공통 모델 파일을 복사해준다(git 용량을 줄이기 위함).
+//// app/src/main/ 이 아닌 src/main 경로임에 주의!!!
+//String skc_copy_src_model1 = "src/main/assets/models/common/cls.nb"
+//String skc_copy_src_model2 = "src/main/assets/models/common/rec_crnn.nb"
+//
+//// skc_copy_src_model1=D:\research\CoinOCR_AndroidDemo\app\src\main\assets\models\common\cls.nb
+//println 'skc_copy_src_model1=' + file({skc_copy_src_model1})
+//
+//tasks.register('copyModel0', Copy) {
+//    //from "${skc_copy_src_model1}", "${skc_copy_src_model2}"
+//    from "${skc_copy_src_model1}"
+//    into 'src/main/assets/models/ch_PP-OCRv2'
+//}
+//tasks.register('copyModel1', Copy) {
+//    from "${skc_copy_src_model1}"
+//    into 'src/main/assets/models/ch_PP-OCRv3_infer'
+//}
+//tasks.register('copyModel2', Copy) {
+//    from "${skc_copy_src_model1}"
+//    into 'src/main/assets/models/en_PP-OCRv3_infer'
+//}
+//tasks.register('copyModel3', Copy) {
+//    from "${skc_copy_src_model1}"
+//    into 'src/main/assets/models/ch_PP-OCR_V3_add_60x2_230708'
+//}
+//tasks.register('copyModel4', Copy) {
+//    from "${skc_copy_src_model1}"
+//    into 'src/main/assets/models/ch_PP-OCR_V3_500_add_500_noflip_rot30'
+//}
+//preBuild.dependsOn copyModel0, copyModel1, copyModel2, copyModel3, copyModel4
