@@ -156,6 +156,8 @@ public class Predictor {
         warmupIterNum = 0; // do not need warm
         // Run inference
         Date start = new Date();
+        // skc TODO: 여기서 coin detection box 마다 처리해주자!!!
+        // OcrResultModel.points 배열의 x, y 좌표만 원본 이미지에서 좌표로 변환해주면 될듯함
         ArrayList<OcrResultModel> results = paddlePredictor.runImage(inputImage, detLongSize, run_det, run_cls, run_rec);
         Date end = new Date();
         inferenceTime = (end.getTime() - start.getTime()) / (float) inferIterNum;

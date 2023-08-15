@@ -1,5 +1,5 @@
 # CoinOCR_AndroidDemo
-## Duplicated from https://github.com/skc0833/CameraX_Sample (3f422c8)
+### Duplicated from https://github.com/skc0833/CameraX_Sample (3f422c8)
 <br/>
 
 ## Build
@@ -7,8 +7,155 @@
 - Sync Project with Gradle Files 클릭
 - OpenCV 빌드 에러가 발생할 경우, Build / Clean Project 를 하게 되면 이 시점에 app\OpenCV 폴더를 내려받으면서 다시 Gradle Sync 하게 되면 성공함
 
+## Inference
+
+<details>
+<summary>init</summary>
+
+```
+// app/src/main/java/com/skc/coin_ocr/LivePreviewActivity.java
+onResume() -> createCameraSource(selectedModel) ->
+predictor.init(this,
+               modelPath,  // "models/ch_PP-OCRv3_Student_99"
+               labelPath,  // "labels/ppocr_keys_v1.txt"
+               det_model,  // "det_ch_PP-OCRv3_Student_99.nb"
+               rec_model,  // "rec_ch_PP-OCRv3_Student_99.nb"
+               cls_model,  // "cls.nb"
+               0,    // useOpencl
+               1,    // cpuThreadNum
+               "",   // cpuPowerMode, TODO: "LITE_POWER_FULL" 테스트 필요!
+               960,  // detLongSize(ratio 를 맞춰서 resize 됨)
+               0.1f  // scoreThreshold (TODO: 사용처 없음???)
+               )
+->
+isLoaded = loadModel(appCtx, modelPath, det_model, ...)
+loadLabel(appCtx, labelPath);
+
+// app/src/main/java/com/skc/coin_ocr/ocr/Predictor.java
+protected boolean loadModel(Context appCtx, String modelPath, ...)
+-> paddlePredictor = new OCRPredictorNative(config);
+
+// app/src/main/java/com/skc/coin_ocr/ocr/OCRPredictorNative.java
+public OCRPredictorNative(Config config)
+->
+loadLibrary(); -> System.loadLibrary("Native");
+nativePointer = init(config.detModelFilename, config.recModelFilename, ...)
+
+// app/src/main/cpp/native.cpp
+Java_com_skc_coin_1ocr_ocr_OCRPredictorNative_init(JNIEnv *env, jobject thiz, jstring j_det_model_path, ...)
+```
+</details>
+
+<details>
+<summary>input</summary>
+
+```
+// 시작시 or 모델 선택시 초기화
+CameraSource(Activity activity, GraphicOverlay overlay)
+-> processingRunnable = new FrameProcessingRunnable();
+
+// app/src/main/java/com/skc/coin_ocr/CameraSourcePreview.java
+startIfReady()
+-> cameraSource.start();
+
+// app/src/main/java/com/skc/coin_ocr/CameraSource.java
+CameraSource.start() 에서
+processingThread = new Thread(processingRunnable);
+processingThread.start();
+
+// 카메라 preview 콜백에서
+CameraPreviewCallback.onPreviewFrame(byte[] data, Camera camera)
+-> processingRunnable.setNextFrame(data, camera);
+--> pendingFrameData = bytesToByteBuffer.get(data); 로 프레임 저장 후,
+lock.notifyAll(); 로 processingRunnable 를 깨움
+
+CameraSource$FrameProcessingRunnable.run() 쓰레드는 lock.wait(); 에서 깨어나
+-> 
+data = pendingFrameData; // 로컬 변수에 복사만 하고, setNextFrame() 의 lock 은 풀어준다!
+frameProcessor.processByteBuffer(
+                            data,
+                            new FrameMetadata.Builder()
+                                .setWidth(previewSize.getWidth())
+                                .setHeight(previewSize.getHeight())
+                                .setRotation(rotationDegrees)
+                                .build(),
+                            graphicOverlay);
+
+참고로 StillImageActivity 에서는 imageProcessor.processBitmap(resizedBitmap, graphicOverlay); 로 직접 화면에 그림
+
+// app/src/main/java/com/skc/coin_ocr/VisionProcessorBase.java
+processByteBuffer(ByteBuffer data, final FrameMetadata frameMetadata, final GraphicOverlay graphicOverlay)
+-> processLatestImage(graphicOverlay);
+
+void processLatestImage(final GraphicOverlay graphicOverlay)
+-> processImage(processingImage, processingMetaData, graphicOverlay);
+
+processImage(ByteBuffer data, final FrameMetadata frameMetadata, 
+             final GraphicOverlay graphicOverlay)
+->
+long frameStartMs = SystemClock.elapsedRealtime();
+BitmapUtils.getBitmap(data, frameMetadata) 로 ImageFormat.NV21 를 Bitmap 로 변환 후,
+1) requestDetectInImage(graphicOverlay,
+            bitmap,
+            /* shouldShowFps= */ true,
+            frameStartMs);
+2) processLatestImage(graphicOverlay); // 여기서 또 호출중
+
+requestDetectInImage(final GraphicOverlay graphicOverlay, final Bitmap originalCameraImage, ...)
+->
+1) runModel(originalCameraImage)
+2) graphicOverlay 에 CameraImageGraphic, predictor.predictResults(), InferenceInfoGraphic 추가 후, 
+graphicOverlay.postInvalidate(); 로 화면 갱신
+
+boolean runModel(Bitmap image)
+->
+predictor.setInputImage(image);
+return predictor.runModel(1, 0, 1);
+
+// app/src/main/java/com/skc/coin_ocr/ocr/Predictor.java
+boolean runModel(int run_det, int run_cls, int run_rec)
+->
+1) ArrayList<OcrResultModel> results = paddlePredictor.runImage(inputImage, detLongSize, run_det, run_cls, run_rec);
+2) results = postprocess(results);
+predictResults = results;  // 바로 이후에 graphicOverlay 에 추가됨
+
+// app/src/main/java/com/skc/coin_ocr/ocr/OCRPredictorNative.java
+runImage(Bitmap originalImage, int max_size_len, int run_det, int run_cls, int run_rec)
+->
+1) float[] rawResults = forward(nativePointer, originalImage, max_size_len, run_det, run_cls, run_rec);
+2) ArrayList<OcrResultModel> results = postprocess(rawResults);
+
+// app/src/main/cpp/native.cpp
+Java_com_skc_coin_1ocr_ocr_OCRPredictorNative_forward(
+      JNIEnv *env, jobject thiz, 
+      jlong java_pointer, jobject original_image, ...)
+-> std::vector<ppredictor::OCRPredictResult> results =
+     ppredictor->infer_ocr(origin, max_size_len, run_det, run_cls, run_rec);
+
+
+```
+</details>
+
+<details>
+<summary>output</summary>
+
+```
+// app/src/main/java/com/skc/coin_ocr/GraphicOverlay.java
+onDraw(Canvas canvas)
+-> graphic.draw(canvas);
+
+// app/src/main/java/com/skc/coin_ocr/textdetector/TextGraphic.java
+void draw(Canvas canvas)
+
+```
+</details>
+
 ## Etc
-- git clone
+
+<details>
+<summary>git clone</summary>
+
+- git clone 2 가지 방법
 ```
 git clone https://github.com/skc0833/CoinOCR_AndroidDemo.git
 -> 
@@ -44,9 +191,13 @@ Key type 은 디폴트 유지(Authentication Key), Key 항목에는 위에서 �
 
 4) 이후 git clone git@github.com:skc0833/CoinOCR_AndroidDemo.git 는 성공해야 함
 ```
+</details>
 
 
 ## Reference
+
+<details>
+<summary>Reference</summary>
 
 - git@github.com:googlesamples/mlkit.git <br>
 Camera sample with ML (TextRecognitionProcessor)
@@ -57,3 +208,4 @@ UI with Settings <br>
 
 - https://github.com/PaddlePaddle/Paddle-Lite-Demo.git <br>
 Write back to texture2D (glTexSubImage2D)
+</details>

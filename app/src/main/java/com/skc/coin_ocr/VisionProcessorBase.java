@@ -96,6 +96,7 @@ public abstract class VisionProcessorBase implements VisionImageProcessor {
             bitmap,
             /* shouldShowFps= */ true,
             frameStartMs);
+        //skc TODO: 아래 함수 호출은 불필요해 보임!!! StillImageActivity 에서 호출시 latestImage 는 항상 null ?
         processLatestImage(graphicOverlay);
     }
 

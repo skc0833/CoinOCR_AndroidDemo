@@ -99,8 +99,10 @@ public class LivePreviewActivity extends AppCompatActivity
     public void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        createCameraSource(selectedModel);
-        startCameraSource();
+        // 시작시 onItemSelected() 가 호출되며, 여기서도 동일한 함수들을 호출중이므로 주석처리함
+        // 불필요하게 중복 호출 방지! TODO: 이렇게 중복호출이 필요한 다른 이유가 있었나???
+        //createCameraSource(selectedModel);
+        //startCameraSource();
     }
 
     /** Stops the camera. */
@@ -221,7 +223,8 @@ public class LivePreviewActivity extends AppCompatActivity
                     return;
             }
             Log.i(TAG, "Using " + model);
-            predictor.init(this, modelPath, labelPath, det_model, rec_model, cls_model, 0, 1, "", 960, 0.1f);
+            predictor.init(this, modelPath, labelPath, det_model, rec_model, cls_model,
+                 0, 1, "", 960, 0.1f);
             cameraSource.setMachineLearningFrameProcessor(new TextRecognitionProcessor(this, predictor));
         } catch (RuntimeException e) {
             Log.e(TAG, "Can not create image processor: " + model, e);

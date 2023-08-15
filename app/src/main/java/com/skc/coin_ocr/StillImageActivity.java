@@ -45,6 +45,7 @@ public class StillImageActivity extends AppCompatActivity {
     private static final String SIZE_SCREEN = "w:screen"; // Match screen width
     private static final String SIZE_1024_768 = "w:1024"; // ~1024*768 in a normal ratio
     private static final String SIZE_640_480 = "w:640"; // ~640*480 in a normal ratio
+    private static final String SIZE_960_720 = "w:960"; //skc add
     private static final String SIZE_ORIGINAL = "w:original"; // Original image size
 
     private static final String KEY_IMAGE_URI = "com.skc.coin_ocr.KEY_IMAGE_URI";
@@ -350,6 +351,10 @@ public class StillImageActivity extends AppCompatActivity {
                 targetWidth = isLandScape ? 640 : 480;
                 targetHeight = isLandScape ? 480 : 640;
                 break;
+            case SIZE_960_720:
+                targetWidth = isLandScape ? 960 : 720;
+                targetHeight = isLandScape ? 720 : 960;
+                break;
             case SIZE_1024_768:
                 targetWidth = isLandScape ? 1024 : 768;
                 targetHeight = isLandScape ? 768 : 1024;
@@ -366,6 +371,7 @@ public class StillImageActivity extends AppCompatActivity {
         List<String> options = new ArrayList<>();
         options.add(SIZE_SCREEN);
         options.add(SIZE_1024_768);
+        options.add(SIZE_960_720);
         options.add(SIZE_640_480);
         options.add(SIZE_ORIGINAL);
 
