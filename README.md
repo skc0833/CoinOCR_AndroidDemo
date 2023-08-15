@@ -14,8 +14,9 @@
 
 ```
 // app/src/main/java/com/skc/coin_ocr/LivePreviewActivity.java
-onResume() -> createCameraSource(selectedModel) ->
-predictor.init(this,
+onResume()
+-> createCameraSource(selectedModel)
+--> predictor.init(this,
                modelPath,  // "models/ch_PP-OCRv3_Student_99"
                labelPath,  // "labels/ppocr_keys_v1.txt"
                det_model,  // "det_ch_PP-OCRv3_Student_99.nb"
@@ -27,11 +28,13 @@ predictor.init(this,
                960,  // detLongSize(ratio 를 맞춰서 resize 됨)
                0.1f  // scoreThreshold (TODO: 사용처 없음???)
                )
-->
+
+// app/src/main/java/com/skc/coin_ocr/ocr/Predictor.java
+boolean init(Context appCtx, String modelPath, String labelPath, ...)
+-> 
 isLoaded = loadModel(appCtx, modelPath, det_model, ...)
 loadLabel(appCtx, labelPath);
 
-// app/src/main/java/com/skc/coin_ocr/ocr/Predictor.java
 protected boolean loadModel(Context appCtx, String modelPath, ...)
 -> paddlePredictor = new OCRPredictorNative(config);
 
@@ -54,8 +57,12 @@ Java_com_skc_coin_1ocr_ocr_OCRPredictorNative_init(JNIEnv *env, jobject thiz, js
 CameraSource(Activity activity, GraphicOverlay overlay)
 -> processingRunnable = new FrameProcessingRunnable();
 
+// app/src/main/java/com/skc/coin_ocr/LivePreviewActivity.java
+onResume()
+-> startCameraSource(); 를 거쳐
+
 // app/src/main/java/com/skc/coin_ocr/CameraSourcePreview.java
-startIfReady()
+startIfReady() 에서
 -> cameraSource.start();
 
 // app/src/main/java/com/skc/coin_ocr/CameraSource.java
@@ -143,6 +150,7 @@ Java_com_skc_coin_1ocr_ocr_OCRPredictorNative_forward(
 // app/src/main/java/com/skc/coin_ocr/GraphicOverlay.java
 onDraw(Canvas canvas)
 -> graphic.draw(canvas);
+--> CameraImageGraphic, TextGraphic, InferenceInfoGraphic 순서로 그려짐
 
 // app/src/main/java/com/skc/coin_ocr/textdetector/TextGraphic.java
 void draw(Canvas canvas)

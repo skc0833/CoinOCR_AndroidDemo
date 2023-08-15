@@ -9,6 +9,11 @@ import android.graphics.Path;
 import android.graphics.Point;
 import android.util.Log;
 
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Size;
+import org.opencv.core.Scalar;
+
 import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -37,6 +42,7 @@ public class Predictor {
     protected float postprocessTime = 0;
 
     protected ArrayList<OcrResultModel> predictResults;
+    public Mat det_circles = new Mat(); //skc add
     public ArrayList<OcrResultModel> predictResults() {
         return predictResults;
     }
@@ -158,7 +164,68 @@ public class Predictor {
         Date start = new Date();
         // skc TODO: 여기서 coin detection box 마다 처리해주자!!!
         // OcrResultModel.points 배열의 x, y 좌표만 원본 이미지에서 좌표로 변환해주면 될듯함
-        ArrayList<OcrResultModel> results = paddlePredictor.runImage(inputImage, detLongSize, run_det, run_cls, run_rec);
+        ArrayList<OcrResultModel> results;
+        if (true) {
+            Date st = new Date();
+            // Bitmap to Mat
+            Mat src = new Mat();
+            org.opencv.android.Utils.bitmapToMat(inputImage, src);
+
+            // grayscale로 변환
+            Mat graySrc = new Mat();
+            src.copyTo(graySrc);
+            Imgproc.cvtColor(graySrc, graySrc, Imgproc.COLOR_RGB2GRAY);
+
+            // 좀 더 정확한 검출을 위해 잡음 제거를 위한 가우시안 블러처리
+            Mat blurred = new Mat();
+            Imgproc.GaussianBlur(graySrc, blurred, new Size(0.0, 0.0), 1.0);
+
+            //skc 테스트로 가우시안 블러 이미지를 화면에 그려봄 -> setInputImage() 에서 image.copy() 하므로 화면에 안그려진다.
+            //blurred.copyTo(src);
+            //org.opencv.android.Utils.matToBitmap(src, inputImage);
+
+            // 허프 원 변환을 통한 원 검출
+            //Mat circles = new Mat();
+            Mat circles = det_circles;
+            Log.d(TAG, "skc >>> before Imgproc.HoughCircles()");
+            Imgproc.HoughCircles(
+                blurred,
+                circles,
+                Imgproc.HOUGH_GRADIENT, // 검출 방법
+                1*2,    // dp, 원의 중심을 검출하는데 사용되는 누산 평면의 해상도(2 이면 입력이미지 해상도의 절반), 클수록 많이 검출됨
+                50*4,   // 검출된 원 중심점들의 최소 거리, 겹치지 않을 경우, minRadius 의 2배 이상?(작을수록 많이 검출됨)
+                100*3,  // Canny 에지 검출기의 높은 임계값(작을수록 많이 검출됨)
+                35*1,   // 누적 배열에서 원 검출을 위한 임계값(작을수록 많이 검출됨)
+                50*2,   // minRadius 원의 최소 반지름(작을수록 많이 검출됨)
+                100*3   // maxRadius 원의 최대 반지름(클수록 많이 검출됨)
+                );
+            Date et = new Date();
+            float circle_time = (et.getTime() - st.getTime());
+            int circle_cnt = circles.cols();
+            Log.d(TAG, "skc >>> after Imgproc.HoughCircles() circles.cols()=" + circle_cnt + " time -> " + circle_time);
+            if (circle_cnt > 0) {
+                // dp == 4 이면 매우 많이 찾으며 100ms 정도 소요됨.
+                Log.d(TAG, "skc >>> CIRCLE found " + circle_cnt + " time -> " + circle_time);
+            }
+
+//            // 검출한 원에 덧그리기
+//            for (int i = 0; i < circles.cols(); i++) {
+//                double[] circle = circles.get(0, i); // 검출된 원
+//                double centerX = circle[0]; // 원의 중심점 X좌표
+//                double centerY = circle[1]; //원의 중심점 Y좌표
+//                int radius = (int)Math.round(circle[2]); // 원의 반지름
+//                org.opencv.core.Point center = new org.opencv.core.Point((int)Math.round(centerX), (int)Math.round(centerY));
+//                Scalar centerColor = new Scalar(0.0, 0.0, 255.0);
+//                Imgproc.circle(src, center, 3, centerColor, 3);
+//                Scalar circleColor = new Scalar(255.0, 0.0, 255.0);
+//                Imgproc.circle(src, center, radius, circleColor, 3);
+//            }
+//            org.opencv.android.Utils.matToBitmap(src, inputImage);
+
+            results = paddlePredictor.runImage(inputImage, detLongSize, run_det, run_cls, run_rec);
+        } else {
+            results = paddlePredictor.runImage(inputImage, detLongSize, run_det, run_cls, run_rec);
+        }
         Date end = new Date();
         inferenceTime = (end.getTime() - start.getTime()) / (float) inferIterNum;
 

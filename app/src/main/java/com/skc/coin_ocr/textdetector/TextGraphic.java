@@ -15,6 +15,10 @@ import android.util.Log;
 import com.skc.coin_ocr.GraphicOverlay;
 import com.skc.coin_ocr.ocr.OcrResultModel;
 
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
+import org.opencv.imgproc.Imgproc;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,6 +45,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
     private final boolean showConfidence;
 
     private ArrayList<OcrResultModel> ocrResults; // skc add
+    Mat detected_circles; // skc add
 
     TextGraphic(
         GraphicOverlay overlay,
@@ -74,12 +79,14 @@ public class TextGraphic extends GraphicOverlay.Graphic {
     public TextGraphic(
         GraphicOverlay overlay,
         ArrayList<OcrResultModel> ocrResults,
+        Mat detected_circles,
         boolean shouldGroupTextInBlocks,
         boolean showLanguageTag,
         boolean showConfidence) {
         super(overlay);
 
         this.ocrResults = ocrResults;
+        this.detected_circles = detected_circles;
         this.shouldGroupTextInBlocks = shouldGroupTextInBlocks;
         this.showLanguageTag = showLanguageTag;
         this.showConfidence = showConfidence;
@@ -158,6 +165,22 @@ public class TextGraphic extends GraphicOverlay.Graphic {
             paint.setColor(Color.parseColor("#3B85F5"));
             paint.setStrokeWidth(5);
             paint.setStyle(Paint.Style.STROKE);
+
+            if (true) {
+                // 검출한 원에 덧그리기
+                Paint paintCircle = new Paint();
+                paintCircle.setColor(Color.parseColor("#ffff00"));
+                paintCircle.setStrokeWidth(10);
+                paintCircle.setStyle(Paint.Style.STROKE);
+                for (int i = 0; i < detected_circles.cols(); i++) {
+                    double[] circle = detected_circles.get(0, i); // 검출된 원
+                    float centerX = translateX((float)circle[0]); // 원의 중심점 X좌표
+                    float centerY = translateY((float)circle[1]); //원의 중심점 Y좌표
+                    int radius = (int)Math.round(circle[2]); // 원의 반지름
+                    radius = (int)scale((float)radius);
+                    canvas.drawCircle(centerX, centerY, radius, paintCircle);
+                }
+            }
 
             canvas.drawPath(path, paint);
             canvas.drawPath(path, paintFillAlpha);

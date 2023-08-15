@@ -228,6 +228,7 @@ public abstract class VisionProcessorBase implements VisionImageProcessor {
                 new TextGraphic(
                     graphicOverlay,
                     predictor.predictResults(),
+                    predictor.det_circles,
                     false,
                     false,
                     false));

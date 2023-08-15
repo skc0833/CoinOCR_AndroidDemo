@@ -127,14 +127,14 @@ cv::Mat DetResizeImg(const cv::Mat img, int max_size_len,
   else if (resize_h / 32 < 1 + 1e-5)
     resize_h = 32;
   else
-    resize_h = (resize_h / 32 - 1) * 32;
+    resize_h = (resize_h / 32 - 1) * 32; //skc TODO: -1 을 빼는게 더 정확하지 않나???
 
   if (resize_w % 32 == 0)
     resize_w = resize_w;
   else if (resize_w / 32 < 1 + 1e-5)
     resize_w = 32;
   else
-    resize_w = (resize_w / 32 - 1) * 32;
+    resize_w = (resize_w / 32 - 1) * 32; //skc TODO: -1 을 빼는게 더 정확하지 않나???
 
   cv::Mat resize_img;
   cv::resize(img, resize_img, cv::Size(resize_w, resize_h));
