@@ -134,7 +134,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
         int skc_det_idx = 0;
         for (OcrResultModel det : ocrResults) {
             List<Point> points = det.getPoints();
-            Log.d("skc", "draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());
+            Log.d("skc", "draw result -> points.size()=" + points.size() + ", label=" + det.getLabel() + ", det.getConfidence()=" + det.getConfidence());
             //if (points.size() == 0 || det.getConfidence() < 0.9f) {
             if (points.size() == 0 || det.getConfidence() < 0.9f) { // TODO: skc det.getConfidence() 값은 외부에서 설정 가능하게 하자!!!
                 Log.e("skc", "Skip draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());

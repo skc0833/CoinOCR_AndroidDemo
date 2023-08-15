@@ -123,10 +123,11 @@ task downloadAndExtractArchives(type: DefaultTask) {
 }
 preBuild.dependsOn downloadAndExtractArchives
 
+//// 현재 cls.nb 모델을 assets/models/ 하위 모든 폴더에 복사했었으나 cls.nb 크기가 429KB 로 작으므로 중복되더라도 미리 탑재시킴
 //// skc 공통 모델 파일을 복사해준다(git 용량을 줄이기 위함).
 //// app/src/main/ 이 아닌 src/main 경로임에 주의!!!
 //String skc_copy_src_model1 = "src/main/assets/models/common/cls.nb"
-//String skc_copy_src_model2 = "src/main/assets/models/common/rec_crnn.nb"
+////String skc_copy_src_model2 = "src/main/assets/models/common/rec_crnn.nb"
 //
 //// skc_copy_src_model1=D:\research\CoinOCR_AndroidDemo\app\src\main\assets\models\common\cls.nb
 //println 'skc_copy_src_model1=' + file({skc_copy_src_model1})

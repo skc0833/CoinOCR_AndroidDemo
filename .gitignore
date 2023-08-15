@@ -87,5 +87,5 @@ cache/
 OpenCV/
 
 # skc 모델 파일을 preload 시킴(용량 절약을 위해 rec_crnn.nb, cls.nb 는 복사해서 재사용하도록 함)
-app/src/main/assets/models/**/cls.nb
+#app/src/main/assets/models/**/cls.nb
 !app/src/main/assets/models/common/cls.nb
