@@ -99,10 +99,10 @@ public class LivePreviewActivity extends AppCompatActivity
     public void onResume() {
         super.onResume();
         Log.d(TAG, "onResume");
-        // 시작시 onItemSelected() 가 호출되며, 여기서도 동일한 함수들을 호출중이므로 주석처리함
-        // 불필요하게 중복 호출 방지! TODO: 이렇게 중복호출이 필요한 다른 이유가 있었나???
-        //createCameraSource(selectedModel);
-        //startCameraSource();
+        // 시작시 onItemSelected() 가 호출되며, 여기서도 동일한 함수들을 중복 호출중임
+        // 하지만 여기서 주석처리하면 카메라 해상도 변경시 반영이 안되고 있음
+        createCameraSource(selectedModel);
+        startCameraSource();
     }
 
     /** Stops the camera. */
