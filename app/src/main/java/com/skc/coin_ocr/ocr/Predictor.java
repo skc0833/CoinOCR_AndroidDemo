@@ -1,5 +1,7 @@
 package com.skc.coin_ocr.ocr;
 
+import static java.lang.Math.max;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
@@ -8,6 +10,7 @@ import android.graphics.Paint;
 import android.graphics.Path;
 import android.graphics.Point;
 import android.util.Log;
+import android.util.Pair;
 
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -162,14 +165,36 @@ public class Predictor {
         warmupIterNum = 0; // do not need warm
         // Run inference
         Date start = new Date();
-        // skc TODO: 여기서 coin detection box 마다 처리해주자!!!
-        // OcrResultModel.points 배열의 x, y 좌표만 원본 이미지에서 좌표로 변환해주면 될듯함
         ArrayList<OcrResultModel> results;
+
+        float scaleFactor = 1.0f;
         if (true) {
+            // 동전 원영역 찾기
             Date st = new Date();
+
             // Bitmap to Mat
             Mat src = new Mat();
-            org.opencv.android.Utils.bitmapToMat(inputImage, src);
+
+            if (!true) {
+                // 정확도 향상을 위해 960 크기로 줄여보자! detLongSize 와 동일하게 해봄 ==> 별효과 없는듯함
+                Pair<Integer, Integer> targetedSize = new Pair<>(960, 960);
+//                Pair<Integer, Integer> targetedSize = new Pair<>(720, 720);
+//                Pair<Integer, Integer> targetedSize = new Pair<>(640, 640); // 작은 동전을 못찾음!!!
+                scaleFactor =
+                    max((float) inputImage.getWidth() / (float) targetedSize.first,
+                        (float) inputImage.getHeight() / (float) targetedSize.second);
+
+                Bitmap resizedBitmap =
+                    Bitmap.createScaledBitmap(
+                        inputImage,
+                        (int) (inputImage.getWidth() / scaleFactor),
+                        (int) (inputImage.getHeight() / scaleFactor),
+                        true);
+
+                org.opencv.android.Utils.bitmapToMat(resizedBitmap, src);
+            } else {
+                org.opencv.android.Utils.bitmapToMat(inputImage, src);
+            }
 
             // grayscale로 변환
             Mat graySrc = new Mat();
@@ -177,6 +202,7 @@ public class Predictor {
             Imgproc.cvtColor(graySrc, graySrc, Imgproc.COLOR_RGB2GRAY);
 
             // 좀 더 정확한 검출을 위해 잡음 제거를 위한 가우시안 블러처리
+            //skc 현재 가우시안 블러처리를 안해주면 배경에 따라 너무 많이 검출이 되고 있다(물결무늬 카페트 위의 1개 동전이, 60개 이상으로 검출됨)
             Mat blurred = new Mat();
             Imgproc.GaussianBlur(graySrc, blurred, new Size(0.0, 0.0), 1.0);
 
@@ -185,20 +211,34 @@ public class Predictor {
             //org.opencv.android.Utils.matToBitmap(src, inputImage);
 
             // 허프 원 변환을 통한 원 검출
-            //Mat circles = new Mat();
-            Mat circles = det_circles;
+            Mat circles = new Mat();
             Log.d(TAG, "skc >>> before Imgproc.HoughCircles()");
             Imgproc.HoughCircles(
-                blurred,
+                blurred, //graySrc,
                 circles,
                 Imgproc.HOUGH_GRADIENT, // 검출 방법
-                1*2,    // dp, 원의 중심을 검출하는데 사용되는 누산 평면의 해상도(2 이면 입력이미지 해상도의 절반), 클수록 많이 검출됨
-                50*4,   // 검출된 원 중심점들의 최소 거리, 겹치지 않을 경우, minRadius 의 2배 이상?(작을수록 많이 검출됨)
-                100*3,  // Canny 에지 검출기의 높은 임계값(작을수록 많이 검출됨)
-                35*1,   // 누적 배열에서 원 검출을 위한 임계값(작을수록 많이 검출됨)
-                50*2,   // minRadius 원의 최소 반지름(작을수록 많이 검출됨)
-                100*3   // maxRadius 원의 최대 반지름(클수록 많이 검출됨)
-                );
+                1,    // dp, 원의 중심을 검출하는데 사용되는 누산 평면의 해상도(2 이면 입력이미지 해상도의 절반), 클수록 많이 검출됨
+                100,   // 검출된 원 중심점들의 최소 거리, 겹치지 않을 경우, minRadius 의 2배 이상?(작을수록 많이 검출됨)
+                250,  // Canny 에지 검출기의 높은 임계값(작을수록 많이 검출됨)
+                35,   // 누적 배열에서 원 검출을 위한 임계값(작을수록 많이 검출됨)
+                50,   // minRadius 원의 최소 반지름(작을수록 많이 검출됨)
+                200   // maxRadius 원의 최대 반지름(클수록 많이 검출됨)
+            );
+
+            if (scaleFactor != 1.0f) {
+                for (int i = 0; i < circles.cols(); i++) {
+                    double[] circle = circles.get(0, i); // 검출된 원
+                    circle[0] *= scaleFactor; // 원의 중심점 X좌표
+                    circle[1] *= scaleFactor; // 원의 중심점 Y좌표
+                    circle[2] *= scaleFactor; // 원의 반지름
+                    circles.put(0, i, circle); // scaleFactor 적용된 값으로 update
+//                    double[] circle111 = circles.get(0, i);
+//                    double centerX = circle111[0];
+//                    double centerY = circle111[1];
+                }
+            }
+
+            det_circles = circles.clone();
             Date et = new Date();
             float circle_time = (et.getTime() - st.getTime());
             int circle_cnt = circles.cols();
@@ -208,18 +248,14 @@ public class Predictor {
                 Log.d(TAG, "skc >>> CIRCLE found " + circle_cnt + " time -> " + circle_time);
             }
 
-//            // 검출한 원에 덧그리기
-//            for (int i = 0; i < circles.cols(); i++) {
-//                double[] circle = circles.get(0, i); // 검출된 원
-//                double centerX = circle[0]; // 원의 중심점 X좌표
-//                double centerY = circle[1]; //원의 중심점 Y좌표
-//                int radius = (int)Math.round(circle[2]); // 원의 반지름
-//                org.opencv.core.Point center = new org.opencv.core.Point((int)Math.round(centerX), (int)Math.round(centerY));
-//                Scalar centerColor = new Scalar(0.0, 0.0, 255.0);
-//                Imgproc.circle(src, center, 3, centerColor, 3);
-//                Scalar circleColor = new Scalar(255.0, 0.0, 255.0);
-//                Imgproc.circle(src, center, radius, circleColor, 3);
-//            }
+            // 검출한 원 확인(화면에 출력은 TextGraphic.java:draw(Canvas canvas) 에서)
+            for (int i = 0; i < circles.cols(); i++) {
+                double[] circle = circles.get(0, i); // 검출된 원
+                double centerX = circle[0]; // 원의 중심점 X좌표
+                double centerY = circle[1]; //원의 중심점 Y좌표
+                int radius = (int)Math.round(circle[2]); // 원의 반지름
+                Log.d(TAG, "skc >>> [" + i + "] x=" + (int)Math.round(centerX) + ", y=" + (int)Math.round(centerY) + ", radius=" + radius);
+            }
 //            org.opencv.android.Utils.matToBitmap(src, inputImage);
 
             results = paddlePredictor.runImage(inputImage, detLongSize, run_det, run_cls, run_rec);

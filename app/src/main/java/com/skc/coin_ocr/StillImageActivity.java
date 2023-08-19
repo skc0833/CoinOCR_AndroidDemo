@@ -4,8 +4,10 @@ import static java.lang.Math.max;
 
 import android.content.ContentValues;
 import android.content.Intent;
+import android.content.res.AssetManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.MediaStore;
@@ -28,6 +30,7 @@ import com.skc.coin_ocr.ocr.Predictor;
 import com.skc.coin_ocr.textdetector.TextRecognitionProcessor;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -321,6 +324,39 @@ public class StillImageActivity extends AppCompatActivity {
                         (int) (imageBitmap.getWidth() / scaleFactor),
                         (int) (imageBitmap.getHeight() / scaleFactor),
                         true);
+            }
+
+            if (!true) { //skc test coin_multi.jpg 이미지로 python 결과와 비교해보기
+                Bitmap              bmp = null;
+                InputStream is  = null;
+                AssetManager am = this.getAssets();
+
+                try {
+                    is = am.open( "test/coin_multi.jpg", AssetManager.ACCESS_UNKNOWN );
+                    if( is == null ) {
+                        throw new Exception("fail to open asset");
+                    }
+                    bmp = BitmapFactory.decodeStream( is, null, null );
+                    //bmp = BitmapFactory.decodeFileDescriptor( fd );
+                    if( bmp == null ) {
+                        throw new Exception("fail to load bitmap from InputStream");
+                    }
+                    is.close();
+                    is = null;
+                }
+                catch( Exception e ) {
+                    Log.d( TAG, e.getMessage() );
+                    e.printStackTrace();
+                }
+                finally {
+                    try {
+                        if( is != null ) {
+                            is.close();
+                        }
+                    }
+                    catch( Exception e ) { }
+                }
+                resizedBitmap = bmp;
             }
 
             preview.setImageBitmap(resizedBitmap);

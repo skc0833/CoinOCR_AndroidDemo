@@ -138,6 +138,22 @@ public class TextGraphic extends GraphicOverlay.Graphic {
     /** Draws the text block annotations for position, size, and raw value on the supplied canvas. */
     @Override
     public void draw(Canvas canvas) {
+        if (true) {
+            // 검출한 원에 덧그리기
+            Paint paintCircle = new Paint();
+            paintCircle.setColor(Color.parseColor("#ffff00"));
+            paintCircle.setStrokeWidth(10);
+            paintCircle.setStyle(Paint.Style.STROKE);
+            for (int i = 0; i < detected_circles.cols(); i++) {
+                double[] circle = detected_circles.get(0, i); // 검출된 원
+                float centerX = translateX((float)circle[0]); // 원의 중심점 X좌표
+                float centerY = translateY((float)circle[1]); //원의 중심점 Y좌표
+                int radius = (int)Math.round(circle[2]); // 원의 반지름
+                radius = (int)scale((float)radius);
+                canvas.drawCircle(centerX, centerY, radius, paintCircle);
+            }
+        }
+
         int skc_det_idx = 0;
         for (OcrResultModel det : ocrResults) {
             List<Point> points = det.getPoints();
@@ -165,22 +181,6 @@ public class TextGraphic extends GraphicOverlay.Graphic {
             paint.setColor(Color.parseColor("#3B85F5"));
             paint.setStrokeWidth(5);
             paint.setStyle(Paint.Style.STROKE);
-
-            if (true) {
-                // 검출한 원에 덧그리기
-                Paint paintCircle = new Paint();
-                paintCircle.setColor(Color.parseColor("#ffff00"));
-                paintCircle.setStrokeWidth(10);
-                paintCircle.setStyle(Paint.Style.STROKE);
-                for (int i = 0; i < detected_circles.cols(); i++) {
-                    double[] circle = detected_circles.get(0, i); // 검출된 원
-                    float centerX = translateX((float)circle[0]); // 원의 중심점 X좌표
-                    float centerY = translateY((float)circle[1]); //원의 중심점 Y좌표
-                    int radius = (int)Math.round(circle[2]); // 원의 반지름
-                    radius = (int)scale((float)radius);
-                    canvas.drawCircle(centerX, centerY, radius, paintCircle);
-                }
-            }
 
             canvas.drawPath(path, paint);
             canvas.drawPath(path, paintFillAlpha);
