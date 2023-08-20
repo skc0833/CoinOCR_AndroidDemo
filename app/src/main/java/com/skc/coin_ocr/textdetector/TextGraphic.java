@@ -173,10 +173,12 @@ public class TextGraphic extends GraphicOverlay.Graphic {
         if (ocrResults.size() == 0)
             return;
         ocrResults.get(0).coin_idx = 0; // 첫번째 박스는 0번 코인
+        int cur_coin_idx = -1;
         for (int i = 0; i < ocrResults.size(); ++i) {
-            if (ocrResults.get(i).coin_idx >= 0) {
-                //continue; // 이미 부모 동전이 설정된 박스임
+            if (i > 0 && ocrResults.get(i).coin_idx >= 0) {
+                continue; // 이미 부모 동전이 설정된 박스임
             }
+            cur_coin_idx++; // 새로운 동전 출현!
             Rect rcOrg = ocrResults.get(i).bbox_rc;
             // 현재 박스 크기의 2배 rect 정의
             Rect rcBigger = new Rect(max(0, rcOrg.left - rcOrg.width()),
@@ -189,7 +191,8 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                     Rect rcOther = ocrResults.get(j).bbox_rc;
                     if (rcBigger.intersect(rcOther)) {
                         // 현재 박스 크기의 2배 rect 와 겹치는 부분이 있으면, 동일 동전으로 간주함
-                        ocrResults.get(j).coin_idx = i; // 같은 부모 동전에 포함됨
+                        //ocrResults.get(j).coin_idx = i; // 같은 부모 동전에 포함됨
+                        ocrResults.get(j).coin_idx = cur_coin_idx; // 같은 부모 동전에 포함됨
                     }
                 }
             }
