@@ -1,6 +1,7 @@
 package com.skc.coin_ocr.ocr;
 
 import android.graphics.Point;
+import android.graphics.Rect;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -13,6 +14,9 @@ public class OcrResultModel {
     private float cls_idx;
     private String cls_label;
     private float cls_confidence;
+
+    public int coin_idx = -1; //skc add
+    public Rect bbox_rc;
 
     public OcrResultModel() {
         super();
