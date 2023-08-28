@@ -47,6 +47,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
 
     private ArrayList<OcrResultModel> ocrResults; // skc add
     Mat detected_circles; // skc add
+    final float coin_confidence = 0.8f;
 
     TextGraphic(
         GraphicOverlay overlay,
@@ -142,15 +143,19 @@ public class TextGraphic extends GraphicOverlay.Graphic {
         public int price_box_idx;
     }
 
-    public ArrayList<OcrResultCoin> coinList = null; // 외부에서 동전 리스트의 가격, 년도를 읽어서 처리!
+    public ArrayList<OcrResultCoin> coinList = null; // 탐지된 동전들의 가격, 년도를 저장
 
+    // 각 det 마다 모든 point 를 감싸는 bbox 를 구해 det.bbox_rc 에 저장함
     private ArrayList<OcrResultModel> setOcrResultsBBox() {
         ArrayList<OcrResultModel> ocrResultsNew = new ArrayList<>();
         for (OcrResultModel det : ocrResults) {
             List<Point> points = det.getPoints();
             Log.d("skc", "ocr result -> points.size()=" + points.size() + ", label=" + det.getLabel() + ", det.getConfidence()=" + det.getConfidence());
-            if (points.size() == 0 || det.getConfidence() < 0.9f) { // TODO: skc det.getConfidence() 값은 외부에서 설정 가능하게 하자!!!
+            if (points.size() == 0 || Float.isNaN(det.getConfidence()) || det.getConfidence() < coin_confidence) { // TODO: skc det.getConfidence() 값은 외부에서 설정 가능하게 하자!!!
                 Log.e("skc", "Skip draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());
+                if (Float.isNaN(det.getConfidence())) {
+                    Log.e("skc", "--> det.getConfidence() == NaN");
+                }
                 det.bbox_rc = new Rect(-1, -1, -1, -1); // 제외된 box
                 continue;
             }
@@ -158,10 +163,14 @@ public class TextGraphic extends GraphicOverlay.Graphic {
             Point min = new Point(points.get(0).x, points.get(0).y);
             Point max = new Point(points.get(0).x, points.get(0).y);
             for (Point p : points) {
-                if (p.x < min.x) min.x = p.x;
-                else if (p.x > max.x) max.x = p.x;
-                if (p.y < min.y) min.y = p.y;
-                else if (p.y > max.y) max.y = p.y;
+                if (p.x < min.x)
+                    min.x = p.x;
+                else if (p.x > max.x)
+                    max.x = p.x;
+                if (p.y < min.y)
+                    min.y = p.y;
+                else if (p.y > max.y)
+                    max.y = p.y;
             }
             det.bbox_rc = new Rect(min.x, min.y, max.x, max.y);
             ocrResultsNew.add(det);
@@ -172,19 +181,28 @@ public class TextGraphic extends GraphicOverlay.Graphic {
     private void setCoinIndex(int max_width, int max_height) {
         if (ocrResults.size() == 0)
             return;
-        ocrResults.get(0).coin_idx = 0; // 첫번째 박스는 0번 코인
+        ocrResults.get(0).coin_idx = 0; // 첫번째 박스는 0번 코인으로 지정
         int cur_coin_idx = -1;
         for (int i = 0; i < ocrResults.size(); ++i) {
+            Log.d("skc", "label -> " + ocrResults.get(i).getLabel());
+            if (ocrResults.get(i).getLabel().equalsIgnoreCase("2006")) { //skc for debug
+                Log.e("skc", "test111");
+            }
             if (i > 0 && ocrResults.get(i).coin_idx >= 0) {
                 continue; // 이미 부모 동전이 설정된 박스임
             }
             cur_coin_idx++; // 새로운 동전 출현!
             Rect rcOrg = ocrResults.get(i).bbox_rc;
-            // 현재 박스 크기의 2배 rect 정의
+            // 현재 박스 크기의 2배 rect 정의(현재 실제로는 9배 크기임. width x 3 이므로)
+            // TODO: 크기가 맞는지 비교 필요!!!
             Rect rcBigger = new Rect(max(0, rcOrg.left - rcOrg.width()),
                 max(0, rcOrg.top - rcOrg.height()),
                 min(max_width, rcOrg.right + rcOrg.width()),
                 min(max_height, rcOrg.bottom + rcOrg.height()));
+
+            int box_cnt_in_coin = 0; // 현재 동전에 포함된 박스 개수(1 이상이어야 함)
+            if (i == 0)
+                box_cnt_in_coin = 1; // 첫번째 동전은 박스 1개는 무조건 있는 상태임
             for (int j = 0; j < ocrResults.size(); ++j) {
                 if (ocrResults.get(j).coin_idx < 0) { // j != i &&
                     // 아직 부모가 할당되지 않은 박스이고
@@ -193,8 +211,13 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                         // 현재 박스 크기의 2배 rect 와 겹치는 부분이 있으면, 동일 동전으로 간주함
                         //ocrResults.get(j).coin_idx = i; // 같은 부모 동전에 포함됨
                         ocrResults.get(j).coin_idx = cur_coin_idx; // 같은 부모 동전에 포함됨
+                        box_cnt_in_coin++;
                     }
                 }
+            }
+            if (box_cnt_in_coin == 0) {
+                Log.e("skc", "box_cnt_in_coin should be > 0");
+                assert false;
             }
         }
     }
@@ -231,6 +254,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
         int min_box_left = -1;
         int largest_box_idx_in_coin = largest_box_idx - coin1.start_idx; // 동전내에서 가장 큰 박스 인덱스
         String tmp_coin_date = "";
+        coin1.coin_year = "";
         for (int k = 0; k < coin1.box_cnt; ++k) {
             // 1개의 동전내에서 년도 찾기(조합)
             if (k == largest_box_idx_in_coin)
@@ -244,6 +268,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                     Log.e("skc", "Coin [" + k + "] invalid date len = " + year_det.getLabel());
                     //assert false;
                 }
+                return;
             } else if (coin1.box_cnt == 3) {
                 // 년도가 2개 박스인 경우, 박스 left 좌표 순서로 조합
                 if (min_box_left < 0) {
@@ -256,6 +281,8 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                     } else {
                         tmp_coin_date = tmp_coin_date + year_det.getLabel();
                     }
+                    coin1.coin_year = tmp_coin_date;
+                    return;
                 }
             } else {
                 // TODO: 년도가 3개 이상으로 쪼개진 경우도 처리하자(left, date_str 같이 정렬 필요)
@@ -263,7 +290,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                 assert false;
             }
         }
-        coin1.coin_year = tmp_coin_date; // 이전 동전의 년도 저장
+        //coin1.coin_year = tmp_coin_date; // 이전 동전의 년도 저장
     }
 
     private ArrayList<OcrResultCoin> getCoins(int max_width, int max_height) {
@@ -331,7 +358,7 @@ public class TextGraphic extends GraphicOverlay.Graphic {
             for (OcrResultCoin coin1 : coins) {
                 OcrResultModel det = ocrResults.get(coin1.price_box_idx);
                 Rect rcPrice = det.bbox_rc;
-                // 동전 박스가 너무 크게 그려져서 1/2 해줌
+                // 동전 박스가 너무 크게 그려져서 1/2 해줌. TODO: 왜 동전박스가 너무 크게 그려졌지?
                 Rect rcCoin = new Rect((int) translateX(max(0, rcPrice.left - rcPrice.width() / 2)),
                     (int) translateX(max(0, rcPrice.top - rcPrice.height() / 2)),
                     (int) translateY(min(canvas.getWidth(), rcPrice.right + rcPrice.width() / 2)),
@@ -339,14 +366,14 @@ public class TextGraphic extends GraphicOverlay.Graphic {
 
                 Paint paintFillAlpha = new Paint();
                 paintFillAlpha.setStyle(Paint.Style.FILL);
-                paintFillAlpha.setColor(Color.parseColor("#FFFF00"));
+                paintFillAlpha.setColor(Color.parseColor("#FFFF00"));   // #FFFF00 == yellow
                 paintFillAlpha.setAlpha(50);
                 Paint paint = new Paint();
                 paint.setColor(Color.parseColor("#FFFF00"));
                 paint.setStrokeWidth(5);
                 if (!coin1.coin_price.isEmpty() && !coin1.coin_year.isEmpty()) {
                     // 가격, 년도 모두 인식시 분홍색 박스로 표시
-                    paintFillAlpha.setColor(Color.parseColor("#FF00FF")); // FF00FF = magenta
+                    paintFillAlpha.setColor(Color.parseColor("#FF00FF")); // FF00FF == magenta
                     paintFillAlpha.setAlpha(30);
                     paint.setColor(Color.parseColor("#FF00FF"));
                     paint.setStrokeWidth(10);
@@ -356,8 +383,8 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                 canvas.drawRect(rcCoin, paintFillAlpha);
                 canvas.drawRect(rcCoin, paint);
 
-                float x = rcPrice.left;
-                float y = rcPrice.bottom;
+                float x = translateX(rcPrice.left);
+                float y = translateY(rcPrice.bottom);
                 x += 10; y += 50;
                 textPaint.setTextSize(TEXT_SIZE);
                 textPaint.setColor(Color.parseColor("#FFFF00"));
@@ -370,8 +397,11 @@ public class TextGraphic extends GraphicOverlay.Graphic {
         for (OcrResultModel det : ocrResults) {
             List<Point> points = det.getPoints();
             Log.d("skc", "draw result -> points.size()=" + points.size() + ", label=" + det.getLabel() + ", det.getConfidence()=" + det.getConfidence());
-            if (points.size() == 0 || det.getConfidence() < 0.9f) { // TODO: skc det.getConfidence() 값은 외부에서 설정 가능하게 하자!!!
+            if (points.size() == 0 || Float.isNaN(det.getConfidence()) || det.getConfidence() < coin_confidence) { // TODO: skc det.getConfidence() 값은 외부에서 설정 가능하게 하자!!!
                 Log.e("skc", "Skip draw result -> points.size()=" + points.size() + ", det.getConfidence()=" + det.getConfidence());
+                if (Float.isNaN(det.getConfidence())) {
+                    Log.e("skc", "--> det.getConfidence() == NaN");
+                }
                 continue;
             }
             //float x = points.get(0).x;

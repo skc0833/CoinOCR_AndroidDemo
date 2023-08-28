@@ -168,7 +168,7 @@ public class Predictor {
         ArrayList<OcrResultModel> results;
 
         float scaleFactor = 1.0f;
-        if (true) {
+        if (!true) {
             // 동전 원영역 찾기
             Date st = new Date();
 
