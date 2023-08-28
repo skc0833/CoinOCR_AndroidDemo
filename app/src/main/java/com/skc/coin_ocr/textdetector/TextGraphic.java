@@ -281,7 +281,8 @@ public class TextGraphic extends GraphicOverlay.Graphic {
                     } else {
                         tmp_coin_date = tmp_coin_date + year_det.getLabel();
                     }
-                    coin1.coin_year = tmp_coin_date;
+                    if (tmp_coin_date.length() == 4) // 4자리가 되는 경우만 정상 처리(e.g, 20006 처럼 5자리도 가끔 나오고 있음)
+                        coin1.coin_year = tmp_coin_date;
                     return;
                 }
             } else {
